@@ -319,7 +319,17 @@ void CViewRender::Init( void )
 #if defined( CSTRIKE_DLL )
 	m_flLastFOV = default_fov.GetFloat();
 #endif
+	
 
+	// Load the mirror materials
+	m_ScreenFlipMaterial.Init( materials->FindMaterial("engine/mirror_screen", TEXTURE_GROUP_VGUI) );
+	m_ScreenFlipMaterial->IncrementReferenceCount();
+
+	m_CameraFlipMaterial.Init(materials->FindMaterial("engine/mirror_camera", TEXTURE_GROUP_VGUI));
+	m_CameraFlipMaterial->IncrementReferenceCount();
+
+	m_MenuLambdaOutlineMaterial.Init(materials->FindMaterial("engine/menu_lambda_outline", TEXTURE_GROUP_VGUI));
+	m_MenuLambdaOutlineMaterial->IncrementReferenceCount();
 }
 
 //-----------------------------------------------------------------------------
@@ -790,9 +800,12 @@ void CViewRender::SetUpViews()
 		&g_vecVForward, &g_vecVRight, &g_vecVUp, &g_matCamInverse );
 
 	// set up the hearing origin...
+	QAngle view_angles_before = QAngle(view.angles.x, view.angles.y, view.angles.z);
 	AudioState_t audioState;
 	audioState.m_Origin = view.origin;
-	audioState.m_Angles = view.angles;
+
+	QAngle audioStateAngles = QAngle(view.angles.x, view.angles.y + 180, view.angles.z);
+	audioState.m_Angles = audioStateAngles;
 	audioState.m_bIsUnderwater = pPlayer && pPlayer->AudioStateIsUnderwater( view.origin );
 
 	ToolFramework_SetupAudioState( audioState );
@@ -801,7 +814,7 @@ void CViewRender::SetUpViews()
     Assert ( view.origin == audioState.m_Origin );
     Assert ( view.angles == audioState.m_Angles );
 	view.origin = audioState.m_Origin;
-	view.angles = audioState.m_Angles;
+	view.angles = view_angles_before;
 
 	engine->SetAudioState( audioState );
 
@@ -1252,20 +1265,8 @@ void CViewRender::Render( vrect_t *rect )
 			// we should use the monitor view from the left eye for both eyes
 			flags |= RENDERVIEW_SUPPRESSMONITORRENDERING;
 		}
-		if ( pPlayer && pPlayer->InFirstPersonView() && pPlayer->GetViewModel( 0 ) )
-{
-	int iCamAttachment = pPlayer->GetViewModel( 0 )->LookupAttachment( "camera" );
 
-	if ( iCamAttachment != -1 )
-	{
-		Vector cameraOrigin = Vector(0, 0, 0);
-		QAngle cameraAngles = QAngle(0, 0, 0);
-		pPlayer->GetViewModel( 0 )->GetAttachmentLocal( iCamAttachment, cameraOrigin, cameraAngles );
-		view.angles += cameraAngles;
-		view.origin += cameraOrigin;
-	}
-}
-	    RenderView( view, nClearFlags, flags );
+		RenderView( view, nClearFlags, flags );
 
 		if ( UseVR() )
 		{
