@@ -1138,10 +1138,10 @@ bool CNPC_Manhack::OverrideMove( float flInterval )
 	}
 
 	// So cops, etc. will try to avoid them
-	if ( !HasSpawnFlags( SF_MANHACK_NO_DANGER_SOUNDS ) && !m_bHeld )
-	{
-		CSoundEnt::InsertSound( SOUND_DANGER, GetAbsOrigin(), 75, flInterval, this );
-	}
+//	if ( !HasSpawnFlags( SF_MANHACK_NO_DANGER_SOUNDS ) && !m_bHeld )
+//	{
+//		CSoundEnt::InsertSound( SOUND_DANGER, GetAbsOrigin(), 75, flInterval, this );
+//	}
 
 	// -----------------------------------------------------------------
 	//  If I'm being forced to move somewhere

@@ -579,15 +579,6 @@ void CNPC_MetroPolice::PrescheduleThink( void )
 		m_flRecentDamageTime = 0;
 	}
 	
-	if ( GetEnemy() && GetActiveWeapon() && FClassnameIs( m_hDefaultWeapon, "weapon_stunstick" ) )
-	{
-		SetGroundSpeedMultiplier(1.15);
-	}
-	else
-	{
-		SetGroundSpeedMultiplier(1.0);
-	}
-	
 	if ( HasCondition( COND_GOT_PUNTED ) && !IsCurSchedule( SCHED_METROPOLICE_PUNT_STUN ) )
 	{
 		ClearCondition( COND_GOT_PUNTED );
@@ -739,7 +730,7 @@ void CNPC_MetroPolice::Spawn( void )
 	m_nBurstHits = 0;
 	m_HackedGunPos = Vector ( 0, 0, 55 );
 	m_flStopMoveShootTime = FLT_MAX; // Move and shoot defaults on.
-	m_MoveAndShootOverlay.SetInitialDelay( 0.25 ); // But with a bit of a delay.
+	m_MoveAndShootOverlay.SetInitialDelay( 0.75 ); // But with a bit of a delay.
 
 	//m_iPistolClips = METROPOLICE_NUM_CLIPS; // Doesn't do anything.
 
@@ -3450,7 +3441,7 @@ int CNPC_MetroPolice::SelectCombatSchedule()
 	if ( HasCondition( COND_LOW_PRIMARY_AMMO ) || HasCondition( COND_NO_PRIMARY_AMMO ) )
 	{
 		AnnounceOutOfAmmo( );
-		return SCHED_HIDE_AND_RELOAD;
+		return SCHED_METROPOLICE_HIDE_AND_RELOAD;
 	}
 
 	if ( !HasBaton() && ((float)m_nRecentDamage / (float)GetMaxHealth()) > RECENT_DAMAGE_THRESHOLD)
@@ -3466,8 +3457,7 @@ int CNPC_MetroPolice::SelectCombatSchedule()
 	
 	if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) )
 	{
-		if ( !HasCondition( COND_LOW_PRIMARY_AMMO ) && !HasCondition( COND_NO_PRIMARY_AMMO ) )
-			return SelectRangeAttackSchedule();
+		return SelectRangeAttackSchedule();
 	}
 	
 	if ( GetEnemy() && !HasCondition( COND_SEE_ENEMY ) )
@@ -3476,11 +3466,11 @@ int CNPC_MetroPolice::SelectCombatSchedule()
 			return SCHED_METROPOLICE_DEPLOY_MANHACK;
 
 		// If we don't see our enemy. lay down suppressive fire
-	//	if ( OccupyStrategySlot( SQUAD_SLOT_POLICE_COVERING_FIRE1 ) )
-	//	{
-	//		CAI_BaseNPC *pTarget = CreateCustomTarget( GetEnemies()->LastSeenPosition( GetEnemy() ) + GetEnemy()->GetViewOffset() *0.75, 3 );
-	//		AddEntityRelationship( pTarget, D_HT, 0 );
-	//	}
+		// if ( OccupyStrategySlot( SQUAD_SLOT_POLICE_COVERING_FIRE1 ) && !HasBaton() )
+		// {
+			// CAI_BaseNPC *pTarget = CreateCustomTarget( GetEnemies()->LastSeenPosition( GetEnemy() ) + GetEnemy()->GetViewOffset() *0.75, 3 );
+			// AddEntityRelationship( pTarget, D_HT, 0 );
+		// }
 	}
 
 	if ( HasCondition( COND_CAN_MELEE_ATTACK1 ) )
@@ -3492,8 +3482,7 @@ int CNPC_MetroPolice::SelectCombatSchedule()
 			m_BatonSwingTimer.Set( 1.0, 1.75 );
 			return SCHED_MELEE_ATTACK1;
 		}
-		else
-			return SCHED_COMBAT_FACE;
+		return SCHED_COMBAT_FACE;
 	}
 
 	if ( HasCondition( COND_TOO_CLOSE_TO_ATTACK ) )
@@ -3512,14 +3501,11 @@ int CNPC_MetroPolice::SelectCombatSchedule()
 		}
 	}
 
-	if (HasCondition(COND_ENEMY_OCCLUDED))
+	if ( !HasCondition( COND_SEE_ENEMY ) )
 	{
-		if ( gpGlobals->curtime - GetEnemies()->LastTimeSeen( GetEnemy() ) < 5 )
+		if( CanDeployManhack() && OccupyStrategySlot( SQUAD_SLOT_POLICE_DEPLOY_MANHACK ) )
 		{
-			if( CanDeployManhack() && OccupyStrategySlot( SQUAD_SLOT_POLICE_DEPLOY_MANHACK ) )
-			{
-				return SCHED_METROPOLICE_DEPLOY_MANHACK;
-			}
+			return SCHED_METROPOLICE_DEPLOY_MANHACK;
 		}
 		
 		if ( GetEnemy() && !(GetEnemy()->GetFlags() & FL_NOTARGET) )//bookmark
@@ -3530,9 +3516,7 @@ int CNPC_MetroPolice::SelectCombatSchedule()
 				return SCHED_ESTABLISH_LINE_OF_FIRE;
 			}
 		}
-		//m_flHangBackTime = gpGlobals->curtime + random->RandomFloat( 1, 3);
 		
-		if ( !HasBaton() )
 		return SCHED_METROPOLICE_WAIT_IN_COVER;
 	}
 
@@ -4201,19 +4185,18 @@ int CNPC_MetroPolice::SelectSchedule( void )
 		}
 	}
 	
-/* 	// Stunstick switching.
-	if ( GetEnemy() && GetActiveWeapon() )
+ 	// Stunstick switching.
+/* 	if ( GetEnemy() && GetActiveWeapon() )
 	{
 		if ( ShouldSwitchToBaton() )
 		{
+			// This condition interrupts any schedule this metrocop was doing.
 			SetCondition( COND_METROPOLICE_SWITCHED_WEAPON );
 			
 			EquipBaton();
 			
-			// This condition interrupts any schedule this metrocop was doing.
 			m_flBatonChaseTime = gpGlobals->curtime + CHASE_ENEMY_TIME;
 			return SCHED_COMBAT_FACE;
-			DevMsg("Switched\n");
 		}
 	} */
 
@@ -4229,17 +4212,6 @@ int CNPC_MetroPolice::SelectSchedule( void )
 
 		if ( m_bShouldActivateBaton == false && BatonActive() && IsCurSchedule( SCHED_METROPOLICE_DEACTIVATE_BATON ) == false )
 			return SCHED_METROPOLICE_DEACTIVATE_BATON;
-
-		//if( metropolice_chase_use_follow.GetBool() )
-		//{
-	//		if( GetEnemy() )
-	//		{
-	//			AI_FollowParams_t params;
-	//			params.formation = AIF_TIGHT;
-	//			m_FollowBehavior.SetParameters( params );
-	//			m_FollowBehavior.SetFollowTarget( GetEnemy() );
-	//		}
-		//}
 	}
 
 	// See if the player is in our face (unless we're scripting)
@@ -4305,18 +4277,18 @@ int CNPC_MetroPolice::SelectSchedule( void )
 		if ( GetActiveWeapon() && (GetActiveWeapon()->m_iClip1 <= 5) )
 		{
 			m_Sentences.Speak( "METROPOLICE_COVER_LOW_AMMO" );
-			return SCHED_HIDE_AND_RELOAD;
+			return SCHED_METROPOLICE_HIDE_AND_RELOAD;
 		}
 	}
 
-	if( HasCondition( COND_NO_PRIMARY_AMMO ) )
+	if( HasCondition( COND_NO_PRIMARY_AMMO ) && !HasBaton() )
 	{
 		AnnounceOutOfAmmo( );
-		return SCHED_HIDE_AND_RELOAD;
+		return SCHED_METROPOLICE_HIDE_AND_RELOAD;
 	}
 
 	// If we're clubbing someone who threw something at us. chase them
-	if ( m_NPCState == NPC_STATE_COMBAT && m_flChasePlayerTime > gpGlobals->curtime )
+	if ( m_NPCState == NPC_STATE_COMBAT && m_flChasePlayerTime > gpGlobals->curtime && HasBaton() )
 		return SCHED_CHASE_ENEMY;
 
 	if ( !BehaviorSelectSchedule() )
@@ -4394,17 +4366,38 @@ int CNPC_MetroPolice::SelectFailSchedule( int failedSchedule, int failedTask, AI
 		if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) && ( TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) ) )
 			return SCHED_RANGE_ATTACK1;
 		
-		return SCHED_FAIL;
+		return failedSchedule;
 	}
 	
-	if( failedSchedule == SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY )
+	switch( failedSchedule )
 	{
-		return SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY;
+	case SCHED_METROPOLICE_HIDE_AND_RELOAD:
+	case SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY:
+	case SCHED_METROPOLICE_WAIT_IN_COVER:
+	
+		// Stunstick switching.
+		if ( GetEnemy() && GetActiveWeapon() )
+		{
+			if ( ShouldSwitchToBaton() )
+			{
+				// This condition interrupts any schedule this metrocop was doing.
+				SetCondition( COND_METROPOLICE_SWITCHED_WEAPON );
+				
+				EquipBaton();
+				
+				m_flBatonChaseTime = gpGlobals->curtime + CHASE_ENEMY_TIME;
+				return SCHED_COMBAT_FACE;
+			}
+		}
+		
+	break;
+		
 	}
 	
-	if( failedSchedule == SCHED_HIDE_AND_RELOAD )
+	
+	if( failedSchedule == SCHED_METROPOLICE_HIDE_AND_RELOAD )
 	{
-		return SCHED_HIDE_AND_RELOAD;
+		return SCHED_METROPOLICE_HIDE_AND_RELOAD;
 	}
 
 	return BaseClass::SelectFailSchedule( failedSchedule, failedTask, taskFailCode );
@@ -4432,24 +4425,6 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 		}
 		
 		break;
-	
-	case SCHED_HIDE_AND_RELOAD:
-		
-		if ( ShouldSwitchToBaton() )
-		{
-			SetCondition( COND_METROPOLICE_SWITCHED_WEAPON );
-				
-			EquipBaton();
-				
-			// This condition interrupts any schedule this metrocop was doing.
-			m_flBatonChaseTime = gpGlobals->curtime + CHASE_ENEMY_TIME;
-			return SCHED_COMBAT_FACE;
-			DevMsg("Switched\n");
-		}
-		
-		return SCHED_HIDE_AND_RELOAD;
-		
-		break;
 		
 	case SCHED_ESTABLISH_LINE_OF_FIRE:
 	case SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE:
@@ -4459,14 +4434,11 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 			if ( nSched != SCHED_NONE )
 				return nSched;
 		}
+		
 		if ( random->RandomInt( 0, 100) > 50 )
-		{
 			return SCHED_METROPOLICE_FLANK_ENEMY;
-		}
-		else
-		{
-			return SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE;	
-		}		
+		
+		return SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE;	
 		
 	case SCHED_WAKE_ANGRY:
 		return SCHED_METROPOLICE_WAKE_ANGRY;
@@ -4478,7 +4450,7 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 		{
 			// Ditch the strategy slot for attacking (which we just reserved!)
 			VacateStrategySlot();
-			return TranslateSchedule( SCHED_HIDE_AND_RELOAD );
+			return TranslateSchedule( SCHED_METROPOLICE_HIDE_AND_RELOAD );
 		}
 
 		if( !m_fWeaponDrawn && !Weapon_OwnsThisType( "weapon_smg1" ))
@@ -4538,7 +4510,7 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 //-----------------------------------------------------------------------------
 bool CNPC_MetroPolice::ShouldMoveAndShoot()
 {
-	if ( HasSpawnFlags( SF_METROPOLICE_ARREST_ENEMY ) )
+	//if ( HasSpawnFlags( SF_METROPOLICE_ARREST_ENEMY ) )
 		return false;
 
 	if ( ShouldAttemptToStitch() )
@@ -4881,7 +4853,7 @@ void CNPC_MetroPolice::StartTask( const Task_t *pTask )
 		}
 		break;
 		
-	/* case TASK_RANGE_ATTACK1:
+	case TASK_RANGE_ATTACK1:
 		{
 			m_nShots = GetActiveWeapon()->GetRandomBurst();
 			m_flShotDelay = GetActiveWeapon()->GetFireRate();
@@ -4890,7 +4862,7 @@ void CNPC_MetroPolice::StartTask( const Task_t *pTask )
 			ResetIdealActivity( ACT_RANGE_ATTACK1 );
 			m_flLastAttackTime = gpGlobals->curtime;
 		}
-		break; */
+		break; 
 
 	default:
 		BaseClass::StartTask( pTask );
@@ -5093,7 +5065,7 @@ void CNPC_MetroPolice::RunTask( const Task_t *pTask )
 			}
 		}
 		break;
-/* 	case TASK_RANGE_ATTACK1:
+ 	case TASK_RANGE_ATTACK1:
 		{
 			AutoMovement( );
 
@@ -5130,7 +5102,7 @@ void CNPC_MetroPolice::RunTask( const Task_t *pTask )
 				// DevMsg("Wait\n");
 			}
 		}
-		break; */
+		break;
 
 	default:
 		BaseClass::RunTask( pTask );
@@ -5189,11 +5161,33 @@ bool CNPC_MetroPolice::CanDeployManhack( void )
 	// Nope, already have one out.
 	if( m_hManhack != NULL )
 		return false;
-
+	
 	// Nope, don't have any!
 	if( m_iManhacks < 1 )
 		return false;
+	
+	AISquadIter_t iter;
+	CAI_BaseNPC *pSquadmate = m_pSquad ? m_pSquad->GetFirstMember( &iter ) : NULL;
+	
+	int m_iManhacksInSquad = 0;
 
+	while ( pSquadmate )
+	{
+		CNPC_Manhack *pManhack = dynamic_cast<CNPC_Manhack*>(pSquadmate);
+
+		if( pManhack )
+		{
+			m_iManhacksInSquad++;
+		}
+
+		pSquadmate = m_pSquad->GetNextMember( &iter );
+	}
+	
+//	DevMsg("\nNumber of Manhacks in squad is: %i", m_iManhacksInSquad );
+	
+	if ( m_iManhacksInSquad >= 1 )
+		return false;
+	
 	return true;
 }
  
@@ -5348,6 +5342,21 @@ void CNPC_MetroPolice::GatherConditions( void )
 			SetCondition( COND_ATTACK_SLOT_AVAILABLE );
 		}
 	}
+	
+/* 	if ( IsCurSchedule( SCHED_METROPOLICE_CHASE_ENEMY ) )
+	{
+		if( metropolice_chase_use_follow.GetBool() && GetEnemy() )
+		{
+			AI_FollowParams_t params;
+			params.formation = AIF_TIGHT;
+			m_FollowBehavior.SetParameters( params );
+			m_FollowBehavior.SetFollowTarget( GetEnemy() );
+		}
+	}
+	else
+	{
+		m_FollowBehavior.SetFollowTarget( NULL );
+	} */
 
 	if ( m_bPlayerTooClose == false )
 	{
@@ -5455,12 +5464,18 @@ bool CNPC_MetroPolice::ShouldSwitchToBaton( void )
 	if ( m_flBatonChaseCooldown > gpGlobals->curtime )
 		return false;
 	
-	if ( IsUnreachable(GetEnemy()) )
+	if ( IsUnreachable( GetEnemy() ) )
 		return false;
 	
 	float m_flDistToEnemy = ( GetEnemy()->GetAbsOrigin() - GetAbsOrigin() ).Length();
-	if ( m_flDistToEnemy > 256 )
+	if ( m_flDistToEnemy > 350 )
 		return false;
+	
+	CBaseCombatCharacter *pBCC = GetEnemyCombatCharacterPointer();
+	if ( pBCC && pBCC->FInViewCone( this ) && m_flDistToEnemy > 200 )
+	{
+		return false;
+	}
 	
 	if ( OccupyStrategySlot( SQUAD_SLOT_POLICE_CHARGE_ENEMY ) )
 	{
@@ -5816,7 +5831,7 @@ DEFINE_SCHEDULE
 	"		TASK_STOP_MOVING				0"
 	"		TASK_SET_FAIL_SCHEDULE			SCHEDULE:SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE"
 	"		TASK_SET_TOLERANCE_DISTANCE		24"
-	"		TASK_GET_CHASE_PATH_TO_ENEMY	300"
+	"		TASK_GET_CHASE_PATH_TO_ENEMY	10"
 	"		TASK_SPEAK_SENTENCE				6"	// METROPOLICE_SENTENCE_MOVE_INTO_POSITION
 	"		TASK_RUN_PATH					0"
 	"		TASK_METROPOLICE_RESET_LEDGE_CHECK_TIME 0"
@@ -6403,16 +6418,39 @@ DEFINE_SCHEDULE
 	SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY,
 
 	"	Tasks"
-	"		TASK_SET_FAIL_SCHEDULE			SCHEDULE:SCHED_FAIL_TAKE_COVER"
+	"		TASK_SET_FAIL_SCHEDULE			SCHEDULE:SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY"
 	"		TASK_FIND_COVER_FROM_ENEMY		0"
 	"		TASK_RUN_PATH					0"
 	"		TASK_WAIT_FOR_MOVEMENT			0"
 	"		TASK_REMEMBER					MEMORY:INCOVER"
-	"		TASK_FACE_ENEMY					0"
+	"		TASK_SET_SCHEDULE				SCHEDULE:SCHED_METROPOLICE_WAIT_IN_COVER"
 	""
 	"	Interrupts"
 	"		COND_NEW_ENEMY"
 	"		COND_HEAR_DANGER"
+)
+//=========================================================
+//=========================================================
+DEFINE_SCHEDULE
+(
+	SCHED_METROPOLICE_HIDE_AND_RELOAD,
+
+	"	Tasks"
+	"		TASK_SET_FAIL_SCHEDULE		SCHEDULE:SCHED_METROPOLICE_HIDE_AND_RELOAD"
+	"		TASK_FIND_COVER_FROM_ENEMY	0"
+	"		TASK_RUN_PATH				0"
+	"		TASK_WAIT_FOR_MOVEMENT		0"
+	"		TASK_REMEMBER				MEMORY:INCOVER"
+	"		TASK_FACE_ENEMY				0"
+	"		TASK_RELOAD					0"
+	"		TASK_SET_SCHEDULE			SCHEDULE:SCHED_METROPOLICE_WAIT_IN_COVER"
+	""
+	"	Interrupts"
+	"		COND_CAN_MELEE_ATTACK1"
+	"		COND_CAN_MELEE_ATTACK2"
+	"		COND_HEAVY_DAMAGE"
+	"		COND_HEAR_DANGER"
+	"		COND_HEAR_MOVE_AWAY"
 )
  //=========================================================
  // SCHED_METROPOLICE_WAIT_IN_COVER
