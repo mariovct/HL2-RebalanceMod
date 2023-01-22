@@ -56,6 +56,9 @@
 extern ConVar sk_npc_head;
 extern ConVar sk_exploding_crabs;
 
+extern ConVar sk_npc_head_crossbow;
+extern ConVar sk_plr_dmg_crossbow;
+
 #define ZOMBIE_BULLET_DAMAGE_SCALE 0.5f
 
 int g_interactionZombieMeleeWarning;
@@ -691,6 +694,11 @@ void CNPC_BaseZombie::TraceAttack( const CTakeDamageInfo &info, const Vector &ve
 
 	// Keep track of headshots so we can determine whether to pop off our headcrab.
 	if (ptr->hitgroup == HITGROUP_HEAD)
+	{
+		m_bHeadShot = true;
+	}
+	float m_flCrossbowHeadshot = sk_npc_head_crossbow.GetFloat() * sk_plr_dmg_crossbow.GetFloat();
+	if( info.GetDamage() == m_flCrossbowHeadshot && info.GetAmmoType() == GetAmmoDef()->Index("Xbow") )
 	{
 		m_bHeadShot = true;
 	}
