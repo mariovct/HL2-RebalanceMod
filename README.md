@@ -1,5 +1,5 @@
 # HL2-RebalanceMod
-The Github repository for the sourcecode of the mod.
+The Github repository for the HL2 mirrored compatible sourcecode of the mod.
 The download can be found [here](https://github.com/mariovct/HL2-RebalanceMod_Game-files).
 
 =============================================================
