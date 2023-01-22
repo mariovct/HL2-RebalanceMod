@@ -173,7 +173,10 @@ bool Flashlight_UseLegacyVersion( void )
 
 		g_bUseLegacyFlashlight = ( !Q_strcmp( modDir, "hl2" ) ||
 					   !Q_strcmp( modDir, "episodic" ) ||
-					   !Q_strcmp( modDir, "lostcoast" ) || !Q_strcmp( modDir, "hl1" ) || !Q_strcmp( modDir, "hl2_rebalance" ));
+					   !Q_strcmp( modDir, "lostcoast" ) || 
+					   !Q_strcmp( modDir, "hl1" ) || 
+					   !Q_strcmp( modDir, "hl2_rebalance" ) ||
+					   !Q_strcmp( modDir, "hl2_mirrored" ));
 
 		g_bCacheLegacyFlashlightStatus = false;
 	}
