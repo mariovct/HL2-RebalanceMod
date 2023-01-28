@@ -4510,7 +4510,11 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 //-----------------------------------------------------------------------------
 bool CNPC_MetroPolice::ShouldMoveAndShoot()
 {
-	//if ( HasSpawnFlags( SF_METROPOLICE_ARREST_ENEMY ) )
+	
+	if( IsCurSchedule( SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY, false ) )
+		return false;
+	
+	if ( HasSpawnFlags( SF_METROPOLICE_ARREST_ENEMY ) )
 		return false;
 
 	if ( ShouldAttemptToStitch() )

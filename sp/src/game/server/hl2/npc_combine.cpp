@@ -631,11 +631,11 @@ bool CNPC_Combine::ShouldMoveAndShoot()
 		return false;
 	}
 
-/* 	if( m_pSquad && IsCurSchedule( SCHED_COMBINE_TAKE_COVER1, false ) )
+ 	if( IsCurSchedule( SCHED_COMBINE_TAKE_COVER1, false ) )
 	{
 		m_flStopMoveShootTime = gpGlobals->curtime + random->RandomFloat( 0.4f, 0.6f );
 		return false; 
-	} */
+	} 
 	
 	if ( BaseClass::ShouldMoveAndShoot() )
 	{
@@ -2079,14 +2079,14 @@ int CNPC_Combine::SelectFailSchedule( int failedSchedule, int failedTask, AI_Tas
 	{
 		if ( GetEnemy() )
 		{
+			if( failedSchedule == SCHED_COMBINE_HIDE_AND_RELOAD  )
+				return SCHED_RELOAD;
+			
 			if ( CanGrenadeEnemy( false ) && OccupyStrategySlot( SQUAD_SLOT_GRENADE1 ) )
 				return SCHED_RANGE_ATTACK2;
 	
 			if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) && CanOccupyAttackSlot() )
 				return SCHED_RANGE_ATTACK1;
-			
-			if( failedSchedule == SCHED_COMBINE_HIDE_AND_RELOAD  )
-				return SCHED_RELOAD;
 		}
 		
 		return SCHED_FAIL;
