@@ -3321,43 +3321,15 @@ void C_BaseAnimating::ProcessMuzzleFlashEvent()// bookmark
 			AngleVectors( angles, &vAng );
 			vAttachment += vAng * 2;
 			
-			// int	m_iMuzzleFlashColorR;
-			// int	m_iMuzzleFlashColorG;
-			// int	m_iMuzzleFlashColorB;
-			// int m_iMuzzleFlashRadius;
-			
-	// Normal
-	//		dl->color.r = 255;
-	//		dl->color.g = 241;
-	//		dl->color.b = 71;
-	
-	// AR2
-	//		dl->color.r = 227;
-	//		dl->color.g = 255;
-	//		dl->color.b = 253;
-			
-			
 			dlight_t *dl = effects->CL_AllocDlight ( index );
-			dl->origin = vAttachment + Vector( 0, 0, 0 );
+			dl->origin = vAttachment;
 			dl->color.r = m_iMuzzleFlashColorR;
 			dl->color.g = m_iMuzzleFlashColorG;
 			dl->color.b = m_iMuzzleFlashColorB;
-			dl->die = gpGlobals->curtime + 0.3f;
+			dl->die = gpGlobals->curtime + m_flMuzzleFlashTime;
 			dl->radius = m_iMuzzleFlashRadius;
 			dl->decay = dl->radius / m_flMuzzleFlashTime;
 			dl->color.exponent = m_flMuzzleFlashIntensity;
-				
-			// Make an elight
-			dlight_t *el = effects->CL_AllocElight( LIGHT_INDEX_MUZZLEFLASH + index );
-			el->origin = vAttachment;
-			el->radius = dl->radius; 
-			el->decay = el->radius / m_flMuzzleFlashTime;
-			el->die = gpGlobals->curtime + 0.2f;
-			el->color.r = m_iMuzzleFlashColorR;
-			el->color.g = m_iMuzzleFlashColorG;
-			el->color.b = m_iMuzzleFlashColorB;
-			el->color.exponent = m_flMuzzleFlashIntensity;
-			
 		}
 	}
 }
@@ -3568,47 +3540,54 @@ bool C_BaseAnimating::DispatchMuzzleEffect( const char *options, bool isFirstPer
 	// Find the weapon type
 	if ( token ) 
 	{
+		// Setup default values.
+		m_iMuzzleFlashColorR = 255;
+		m_iMuzzleFlashColorG = 240;
+		m_iMuzzleFlashColorB = 70;
+		m_iMuzzleFlashRadius = random->RandomFloat(128.0f, 196.0f);
+		m_flMuzzleFlashTime = 0.1;
+		m_flMuzzleFlashIntensity = 1;
+		m_flMuzzleFlashDecay = m_iMuzzleFlashRadius / 0.1;
+		
 		//TODO: Parse the type from a list instead
 		if ( Q_stricmp( token, "COMBINE" ) == 0 )
 		{
 			// Blue color
-			SetMuzzleFlashRGB( 201, 255, 253 );
-			SetMuzzleFlashIRT();
+			m_iMuzzleFlashColorR = 255;
+			m_iMuzzleFlashColorG = 255;
+			m_iMuzzleFlashColorB = 170;
+			
 			weaponType = MUZZLEFLASH_COMBINE;
 		}
 		else if ( Q_stricmp( token, "AR2" ) == 0 )
 		{
 			// Blue color
-			SetMuzzleFlashRGB( 201, 255, 253 );
-			SetMuzzleFlashIRT();
+			m_iMuzzleFlashColorR = 255;
+			m_iMuzzleFlashColorG = 255;
+			m_iMuzzleFlashColorB = 170;
+			
 			weaponType = MUZZLEFLASH_COMBINE;
 		}
 		else if ( Q_stricmp( token, "SMG1" ) == 0 )
 		{
-			// Default
-			SetMuzzleFlashRGB();
-			SetMuzzleFlashIRT();
 			weaponType = MUZZLEFLASH_SMG1;
 		}
 		else if ( Q_stricmp( token, "PISTOL" ) == 0 )
 		{
-			// Default
-			SetMuzzleFlashRGB();
-			SetMuzzleFlashIRT();
 			weaponType = MUZZLEFLASH_PISTOL;
 		}
 		else if ( Q_stricmp( token, "SHOTGUN" ) == 0 )
 		{
-			// Longer and bigger flash
-			SetMuzzleFlashRGB();
-			SetMuzzleFlashIRT( 1, -1, 0.12 );
+			// Longer flash
+			m_flMuzzleFlashTime = 0.12;
+			
 			weaponType = MUZZLEFLASH_SHOTGUN;
 		}
 		else if ( Q_stricmp( token, "357" ) == 0 )
 		{
-			// Longer and bigger flash
-			SetMuzzleFlashRGB();
-			SetMuzzleFlashIRT( 1, -1, 0.13 );
+			// Longer flash
+			m_flMuzzleFlashTime = 0.13;
+			
 			weaponType = MUZZLEFLASH_357;
 		}
 		else if ( Q_stricmp( token, "RPG" ) == 0 )
@@ -3617,9 +3596,6 @@ bool C_BaseAnimating::DispatchMuzzleEffect( const char *options, bool isFirstPer
 		}
 		else
 		{
-			// Default
-			SetMuzzleFlashRGB();
-			SetMuzzleFlashIRT();
 			//NOTENOTE: This means you specified an invalid muzzleflash type, check your spelling?
 			Assert( 0 );
 		}
@@ -3660,26 +3636,6 @@ bool C_BaseAnimating::DispatchMuzzleEffect( const char *options, bool isFirstPer
 	tempents->MuzzleFlash( weaponType, GetRefEHandle(), attachmentIndex, isFirstPerson );
 
 	return true;
-}
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-void C_BaseAnimating::SetMuzzleFlashIRT( float Intensity, float Radius, float Time )
-{
-	Radius = Radius < 0 ? random->RandomFloat(128.0f, 196.0f) * -Radius : Radius;
-	
-	m_iMuzzleFlashRadius = Radius;
-	m_flMuzzleFlashTime  = Time;
-	m_flMuzzleFlashIntensity = Intensity;
-}
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-void C_BaseAnimating::SetMuzzleFlashRGB( int R, int G, int B )
-{
-	// Use default values if a parameter goes below 0. 
-	// And multiply the default value by the positive value of that parameter. (-1 is default.)
-	m_iMuzzleFlashColorR = R < 0 ? 255 * -R : R;
-	m_iMuzzleFlashColorG = G < 0 ? 240 * -G : G;;
-	m_iMuzzleFlashColorB = B < 0 ? 70  * -B : B;;
 }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

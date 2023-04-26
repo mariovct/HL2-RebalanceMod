@@ -195,7 +195,7 @@ void CWeaponPistol::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCh
 			CSoundEnt::InsertSound( SOUND_COMBAT|SOUND_CONTEXT_GUNFIRE, pOperator->GetAbsOrigin(), SOUNDENT_VOLUME_PISTOL, 0.2, pOperator, SOUNDENT_CHANNEL_WEAPON, pOperator->GetEnemy() );
 
 			WeaponSound( SINGLE_NPC );
-			pOperator->FireBullets( 1, vecShootOrigin, vecShootDir, VECTOR_CONE_PRECALCULATED, MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 2 );
+			pOperator->FireBullets( 1, vecShootOrigin, vecShootDir, VECTOR_CONE_PRECALCULATED, MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 1 );
 			pOperator->DoMuzzleFlash();
 			m_iClip1 = m_iClip1 - 1;
 		}
@@ -285,10 +285,9 @@ void CWeaponPistol::SecondaryAttack( void )
 void CWeaponPistol::BurstThink( void )
 {
 	// If my clip is empty (and I use clips) start reload
-	if ( UsesClipsForAmmo1() && !m_iClip1 ) 
+	if ( !m_iClip1 ) 
 	{
 		m_iBurstSize = 0;
-		Reload();
 		return;
 	}
 
@@ -309,27 +308,19 @@ void CWeaponPistol::BurstThink( void )
 
 	FireBulletsInfo_t info;
 	info.m_vecSrc	 = pPlayer->Weapon_ShootPosition( );
-	
 	info.m_vecDirShooting = pPlayer->GetAutoaimVector( AUTOAIM_SCALE_DEFAULT );
-
-	// To make the firing framerate independent, we may have to fire more than one bullet here on low-framerate systems, 
-	// especially if the weapon we're firing has a really fast rate of fire.
-	info.m_iShots = 0;
 	
 	// MUST call sound before removing a round from the clip of a CMachineGun
 	WeaponSound(SINGLE_NPC);
-	info.m_iShots++;
-
-	// Make sure we don't fire more than the amount in the clip
-	info.m_iShots = MIN( info.m_iShots, m_iClip1 );
-	m_iClip1 -= info.m_iShots;
-
+	
+	info.m_iShots = 1;
+	m_iClip1 -= 1;
 	info.m_flDistance = MAX_TRACE_LENGTH;
 	info.m_iAmmoType = m_iPrimaryAmmoType;
 	info.m_iTracerFreq = 1;
-	// Fire the bullets
 	info.m_vecSpread = pPlayer->GetAttackSpread( this );
-
+	
+	// Fire the bullets
 	pPlayer->FireBullets( info );
 
 	if (!m_iClip1 && pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0)
@@ -349,7 +340,7 @@ void CWeaponPistol::BurstThink( void )
 		return;
 	}
 
-	SetNextThink( gpGlobals->curtime + GetFireRate() );
+	SetNextThink( gpGlobals->curtime + 0.05 );
 }
 //-----------------------------------------------------------------------------
 // Purpose: 

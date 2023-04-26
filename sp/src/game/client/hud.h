@@ -29,6 +29,7 @@ typedef struct wrect_s
 	int right;
 	int top;
 	int bottom;
+	float scale;
 } wrect_t;
 
 //-----------------------------------------------------------------------------
@@ -49,6 +50,11 @@ public:
 	int Height() const
 	{
 		return rc.bottom - rc.top;
+	}
+	
+	float Scale() const
+	{
+		return rc.scale;
 	}
 
 	// causes the font manager to generate the glyph, prevents run time hitches on platforms that have slow font managers

@@ -77,7 +77,7 @@ extern ConVar autoaim_max_dist;
 
 extern int gEvilImpulse101;
 
-ConVar hl2_zoomFOV( "hl2_zoomFOV", "20" );
+ConVar hl2_zoomfov( "hl2_zoomfov", "20" );
 
 ConVar sv_autojump( "sv_autojump", "0" );
 
@@ -1333,7 +1333,7 @@ void CHL2_Player::ToggleZoom(void)
 //-----------------------------------------------------------------------------
 void CHL2_Player::StartZooming( void )
 {
-	int iFOV = hl2_zoomFOV.GetFloat();//bookmark
+	int iFOV = hl2_zoomfov.GetFloat();//bookmark
 	if ( SetFOV( this, iFOV, 0.4f ) )
 	{
 		m_HL2Local.m_bZooming = true;

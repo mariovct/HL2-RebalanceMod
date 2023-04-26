@@ -2765,16 +2765,15 @@ float CNPC_MetroPolice::MaxYawSpeed( void )
 
 	case ACT_RUN:
 	case ACT_RUN_HURT:
-		return 75;
+		return 15;
 
 	case ACT_WALK:
 	case ACT_WALK_CROUCH:
 	case ACT_RUN_CROUCH:
-	case ACT_RUN_ON_FIRE:
 		return 25;
 
 	default:
-		return 75;
+		return 45;
 	}
 }
 
@@ -3425,7 +3424,7 @@ int CNPC_MetroPolice::SelectCombatSchedule()
 	// Announce a new enemy
 	if ( HasCondition( COND_NEW_ENEMY ) )
 	{
-	//	CapabilitiesAdd( bits_CAP_MOVE_JUMP );
+		CapabilitiesAdd( bits_CAP_MOVE_JUMP );
 		AnnounceEnemyType( GetEnemy() );
 	}
 
@@ -4363,8 +4362,14 @@ int CNPC_MetroPolice::SelectFailSchedule( int failedSchedule, int failedTask, AI
 		if( CanDeployManhack() && OccupyStrategySlot( SQUAD_SLOT_POLICE_DEPLOY_MANHACK ) )
 			return SCHED_METROPOLICE_DEPLOY_MANHACK;
 	
-		if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) && ( TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) ) )
+		if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) && ( 
+		TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || 
+		TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) ||
+		IsCurSchedule(SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE ) ||
+		IsCurSchedule(SCHED_METROPOLICE_FLANK_ENEMY ) ) )
+		{
 			return SCHED_RANGE_ATTACK1;
+		}
 		
 		return failedSchedule;
 	}
@@ -4435,10 +4440,27 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 				return nSched;
 		}
 		
-		if ( random->RandomInt( 0, 100) > 50 )
-			return SCHED_METROPOLICE_FLANK_ENEMY;
-		
-		return SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE;	
+		// Random schedules.
+		switch( random->RandomInt(0,1) )
+			{
+			case 0:	
+				return SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE;
+				break;
+				
+			case 1:	
+				return SCHED_METROPOLICE_FLANK_ENEMY;
+				break;
+				
+/* 			case 2:	
+				// Don't overwatch if we didn't recently see our enemy!
+				AI_EnemyInfo_t *pMemory = GetEnemies()->Find( GetEnemy() );
+				if ( pMemory && GetEnemyLastTimeSeen() > ( gpGlobals->curtime - 5.0 ) )
+				{
+					return SCHED_ENTER_OVERWATCH;
+				}
+				break; */
+			}
+		break;
 		
 	case SCHED_WAKE_ANGRY:
 		return SCHED_METROPOLICE_WAKE_ANGRY;
@@ -4511,8 +4533,8 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 bool CNPC_MetroPolice::ShouldMoveAndShoot()
 {
 	
-	if( IsCurSchedule( SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY, false ) )
-		return false;
+/* 	if( IsCurSchedule( SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY, false ) )
+		return false; */
 	
 	if ( HasSpawnFlags( SF_METROPOLICE_ARREST_ENEMY ) )
 		return false;
@@ -5304,7 +5326,7 @@ WeaponProficiency_t CNPC_MetroPolice::CalcWeaponProficiency( CBaseCombatWeapon *
 {
 	if( FClassnameIs( pWeapon, "weapon_pistol" ) )
 	{
-		return WEAPON_PROFICIENCY_GOOD;
+		return WEAPON_PROFICIENCY_AVERAGE;
 	}
 
 	if( FClassnameIs( pWeapon, "weapon_smg1" ) )
@@ -5333,7 +5355,7 @@ void CNPC_MetroPolice::GatherConditions( void )
 		// slot. If they do not select an attack schedule, then they'll release the slot.
 		
 		// Make sure we're fully loaded before trying to poll.
-		if ( GetActiveWeapon()->m_iClip1 < GetActiveWeapon()->GetMaxClip1() * 0.85 )
+		if ( GetActiveWeapon() && GetActiveWeapon()->m_iClip1 < GetActiveWeapon()->GetMaxClip1() * 0.85 )
 		{
 			if ( !HasCondition( COND_LOW_PRIMARY_AMMO ) )
 			{
@@ -5870,7 +5892,9 @@ DEFINE_SCHEDULE
 	"		TASK_RUN_PATH					0"
 	"		TASK_METROPOLICE_RESET_LEDGE_CHECK_TIME 0"
 	"		TASK_WAIT_FOR_MOVEMENT			0"
-	"		TASK_SET_SCHEDULE				SCHEDULE:SCHED_COMBAT_FACE" //bookmark
+	"		TASK_STOP_MOVING		0"
+	"		TASK_SET_ACTIVITY		ACTIVITY:ACT_IDLE"
+	"		TASK_WAIT_FACE_ENEMY			3"
 	"	"
 	"	Interrupts "
 	"		COND_NEW_ENEMY"
@@ -6401,7 +6425,9 @@ DEFINE_SCHEDULE//bookmark
 	"		TASK_SPEAK_SENTENCE						6"
 	"		TASK_RUN_PATH							0"
 	"		TASK_WAIT_FOR_MOVEMENT					0"
-	"		TASK_SET_SCHEDULE						SCHEDULE:SCHED_COMBAT_FACE"
+	"		TASK_STOP_MOVING		0"
+	"		TASK_SET_ACTIVITY		ACTIVITY:ACT_IDLE"
+	"		TASK_WAIT_FACE_ENEMY			3"
 	""
 	"	Interrupts"
 	"		COND_NEW_ENEMY"
@@ -6492,6 +6518,52 @@ DEFINE_SCHEDULE
 	"		TASK_STOP_MOVING		0"
 	"		TASK_PLAY_SEQUENCE		ACTIVITY:ACT_FLINCH_PHYSICS"
 )
+//=========================================================
+// 	SCHED_ENTER_OVERWATCH
+//
+// Parks a cop in place looking at the player's
+// last known position, ready to attack if the player pops out
+//=========================================================
+ DEFINE_SCHEDULE	
+ (
+ SCHED_ENTER_OVERWATCH,
+
+ "	Tasks"
+ "		TASK_STOP_MOVING			0"
+ "		TASK_COMBINE_SET_STANDING	0"
+ "		TASK_SET_ACTIVITY			ACTIVITY:ACT_IDLE"
+ "		TASK_FACE_ENEMY				0"
+ "		TASK_SET_SCHEDULE			SCHEDULE:SCHED_COMBINE_OVERWATCH"
+ ""
+ "	Interrupts"
+ "		COND_HEAR_DANGER"
+ "		COND_NEW_ENEMY"
+ )
+
+//=========================================================
+// 	SCHED_OVERWATCH
+//
+// Parks a cop in place looking at the player's
+// last known position, ready to attack if the player pops out
+//=========================================================
+ DEFINE_SCHEDULE	
+ (
+ SCHED_OVERWATCH,
+
+ "	Tasks"
+ "		TASK_WAIT_FACE_ENEMY		10"
+ ""
+ "	Interrupts"
+ "		COND_CAN_RANGE_ATTACK1"
+ "		COND_ENEMY_DEAD"
+ "		COND_LIGHT_DAMAGE"
+ "		COND_HEAVY_DAMAGE"
+ "		COND_NO_PRIMARY_AMMO"
+ "		COND_HEAR_DANGER"
+ "		COND_HEAR_MOVE_AWAY"
+ "		COND_NEW_ENEMY"
+ "		COND_TOO_FAR_TO_ATTACK"
+ )
 
 AI_END_CUSTOM_NPC()
 

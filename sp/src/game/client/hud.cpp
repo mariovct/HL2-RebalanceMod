@@ -108,6 +108,7 @@ void LoadHudTextures( CUtlDict< CHudTexture *, int >& list, const char *szFilena
 						iTexTop		= pTemp->GetInt( "y", 0 ),
 						iTexRight	= pTemp->GetInt( "width", 0 )	+ iTexLeft,
 						iTexBottom	= pTemp->GetInt( "height", 0 )	+ iTexTop;
+				float 	flTexScale	= pTemp->GetFloat( "scale", 0 );
 
 					for ( int i = 0; i < hudTextureFileRefs.Size(); i++ )
 					{
@@ -121,6 +122,7 @@ void LoadHudTextures( CUtlDict< CHudTexture *, int >& list, const char *szFilena
 							tex->rc.top		= iTexTop;
 							tex->rc.right	= iTexRight;
 							tex->rc.bottom	= iTexBottom;
+							tex->rc.scale	= flTexScale;
 
 							Q_strncpy( tex->szShortName, hudTextureFileRefs[i].m_cszHudTexturePrefix, sizeof( tex->szShortName ) );
 							Q_strncpy( tex->szShortName + hudTextureFileRefs[i].m_uiPrefixLength, pTemp->GetName(), sizeof( tex->szShortName ) - hudTextureFileRefs[i].m_uiPrefixLength );
@@ -744,8 +746,8 @@ CHudTexture *CHud::AddUnsearchableHudIconToList( CHudTexture& texture )
 	}
 	else
 	{
-		Q_snprintf( composedName, sizeof( composedName ), "%s_%i_%i_%i_%i",
-			texture.szTextureFile, texture.rc.left, texture.rc.top, texture.rc.right, texture.rc.bottom );
+		Q_snprintf( composedName, sizeof( composedName ), "%s_%i_%i_%i_%i_%fl",
+			texture.szTextureFile, texture.rc.left, texture.rc.top, texture.rc.right, texture.rc.bottom, texture.rc.scale );
 	}
 
 	CHudTexture *icon = GetIcon( composedName );

@@ -18,6 +18,10 @@
 #include "vphysics/constraints.h"
 #include "ai_hint.h"
 
+ConVar sk_npc_hopper_warn_range("sk_npc_hopper_warn_range", "145" );
+ConVar sk_npc_hopper_detonate_range("sk_npc_hopper_detonate_range", "120" );
+ConVar sk_npc_hopper_explode_dmg("sk_npc_hopper_explode_dmg", "150" );
+
 enum
 {
 	MINE_STATE_DORMANT = 0,
@@ -823,7 +827,7 @@ void CBounceBomb::Wake( bool bAwake )
 //---------------------------------------------------------
 float CBounceBomb::FindNearestNPC()
 {
-	float flNearest = (BOUNCEBOMB_WARN_RADIUS * BOUNCEBOMB_WARN_RADIUS) + 1.0;
+	float flNearest = (sk_npc_hopper_warn_range.GetFloat() * sk_npc_hopper_warn_range.GetFloat()) + 1.0;
 
 	// Assume this search won't find anyone.
 	SetNearestNPC( NULL );
@@ -983,7 +987,7 @@ void CBounceBomb::SearchThink()
 
 	float flNearestNPCDist = FindNearestNPC();
 
-	if( flNearestNPCDist <= BOUNCEBOMB_WARN_RADIUS )
+	if( flNearestNPCDist <= sk_npc_hopper_warn_range.GetFloat() )
 	{
 		if( !IsAwake() )
 		{
@@ -1000,7 +1004,7 @@ void CBounceBomb::SearchThink()
 		return;
 	}
 
-	if( flNearestNPCDist <= BOUNCEBOMB_DETONATE_RADIUS && !IsFriend( m_hNearestNPC ) )
+	if( flNearestNPCDist <= sk_npc_hopper_detonate_range.GetFloat() && !IsFriend( m_hNearestNPC ) )
 	{
 		if( m_bBounce )
 		{
@@ -1080,12 +1084,12 @@ void CBounceBomb::ExplodeThink()
 
 	if (m_iModification == MINE_MODIFICATION_CAVERN)
 	{
-		ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), (pThrower) ? pThrower : this, BOUNCEBOMB_EXPLODE_DAMAGE, BOUNCEBOMB_EXPLODE_RADIUS, true,
+		ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), (pThrower) ? pThrower : this, sk_npc_hopper_explode_dmg.GetFloat(), BOUNCEBOMB_EXPLODE_RADIUS, true,
 			NULL, CLASS_PLAYER_ALLY );
 	}
 	else
 	{
-		ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), (pThrower) ? pThrower : this, BOUNCEBOMB_EXPLODE_DAMAGE, BOUNCEBOMB_EXPLODE_RADIUS, true);
+		ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), (pThrower) ? pThrower : this, sk_npc_hopper_explode_dmg.GetFloat(), BOUNCEBOMB_EXPLODE_RADIUS, true);
 	}
 	UTIL_Remove( this );
 }

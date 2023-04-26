@@ -1344,10 +1344,25 @@ float CNPC_AntlionGuard::MaxYawSpeed( void )
 
 		if ( dist > 512 )
 			return 16.0f;
+		
+		float yawSpeed;
 
-		//FIXME: Alter by skill level
-		float yawSpeed = RemapVal( dist, 0, 512, 6.0f, 6.0f );
-		yawSpeed = clamp( yawSpeed, 6.0f, 6.0f );
+		//Alter by skill level
+		if ( g_pGameRules->IsSkillLevel( SKILL_HARD ) )
+		{
+			yawSpeed = RemapVal( dist, 0, 512, 6.0f, 6.0f );
+			yawSpeed = clamp( yawSpeed, 6.0f, 6.0f );
+		}
+		else if ( g_pGameRules->IsSkillLevel( SKILL_MEDIUM ) )
+		{
+			yawSpeed = RemapVal( dist, 0, 512, 3.5f, 4.0f );
+			yawSpeed = clamp( yawSpeed, 3.5f, 4.0f );
+		}
+		else
+		{
+			yawSpeed = RemapVal( dist, 0, 512, 1.0f, 2.0f );
+			yawSpeed = clamp( yawSpeed, 1.0f, 2.0f );
+		}
 
 		return yawSpeed;
 	}

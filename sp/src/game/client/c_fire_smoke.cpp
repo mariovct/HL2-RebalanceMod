@@ -384,19 +384,22 @@ void C_EntityFlame::Simulate( void )
 
 		dlight_t *dl = effects->CL_AllocDlight ( index );
 		dl->origin = GetAbsOrigin();
- 		dl->origin[2] += 16;
-		dl->color.r = 254;
-		dl->color.g = 94;
-		dl->color.b = 0;
+		dl->color.r = 255;
+		dl->color.g = 130;
+		dl->color.b = 20;
+		dl->color.exponent = -3;
+		dl->die = gpGlobals->curtime + 0.1;
+		dl->style = 6;
 	if ( IsEffectActive(EF_BRIGHTLIGHT) || IsEffectActive(EF_DIMLIGHT) )
 	{
-		dl->radius = random->RandomFloat(400,431);
+		dl->radius = random->RandomFloat(400, 430);
+		dl->decay = dl->radius / 0.1;
 	}
 	else
 	{
-		dl->radius = random->RandomFloat(44,88);
+		dl->radius = 192;
+		dl->decay = dl->radius / 0.1;
 	}
-		dl->die = gpGlobals->curtime + 0.001;
 }
 
 //-----------------------------------------------------------------------------

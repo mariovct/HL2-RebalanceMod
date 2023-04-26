@@ -631,21 +631,14 @@ void CWeaponCrossbow::Precache( void )
 // Purpose:
 //-----------------------------------------------------------------------------
 void CWeaponCrossbow::PrimaryAttack( void )
-{	
-	/*if ( m_bInZoom && g_pGameRules->IsMultiplayer() )
-	{
-//	   	FireSniperBolt();
-	   	FireBolt();
-    }
-    else
-     {*/
-    	FireBolt();
-    //}
-
+{
+	SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration( ACT_VM_PRIMARYATTACK ) + 1 );
+	
+	FireBolt();
+	
     // Signal a reload
-    m_bMustReload = true;
+	m_bMustReload = true;
 
-    SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration( ACT_VM_PRIMARYATTACK ) );
 
     CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
     if ( pPlayer )
@@ -653,7 +646,6 @@ void CWeaponCrossbow::PrimaryAttack( void )
     	m_iPrimaryAttacks++;
     	gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
     }
-	//DisCharge();
 }
 
 //-----------------------------------------------------------------------------
@@ -672,7 +664,9 @@ bool CWeaponCrossbow::Reload( void )
 {
 	if ( BaseClass::Reload() )
 	{
+		m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration( ACT_VM_RELOAD ) + 1.75;
 		m_bMustReload = false;
+		
 		return true;
 	}
 
@@ -688,7 +682,7 @@ void CWeaponCrossbow::CheckZoomToggle( void )
 	
 	if ( pPlayer->m_afButtonPressed & IN_ATTACK2 )
 	{
-			ToggleZoom();
+		ToggleZoom();
 	}
 }
 
@@ -703,32 +697,8 @@ void CWeaponCrossbow::ItemBusyFrame( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CWeaponCrossbow::ReloadAnimSpeed( void )
-{
-/*     if ( m_bMustReload != false )
-    {
-        SetPlaybackRate(0.1f); 
-		DevMsg("It Works!!!");
-    }
-    else
-    {
-        SetPlaybackRate(1.0f);
-		DevMsg("No, no it doesn't");
-    } */
-}
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
 void CWeaponCrossbow::ItemPostFrame( void )//bookmark
 {
-	
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-	
-	if ( pOwner->m_nButtons & IN_ATTACK )
-	{
-		m_flChargeTime = gpGlobals->curtime + 3;
-	}
-	
 	// Allow zoom toggling
 	CheckZoomToggle();
 
@@ -739,25 +709,6 @@ void CWeaponCrossbow::ItemPostFrame( void )//bookmark
 
 	BaseClass::ItemPostFrame();
 }
-
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-/* void CWeaponCrossbow::DisCharge( void )
-{
-	float m_flDisChargeTime;
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-	
-	if ( ( pOwner->m_nButtons & IN_ATTACK ) == false )// This calculates the ammount of time discharging takes based on the difference between m_flChargeTime & gpGlobals->curtime
-	{
-		m_flDisChargeTime = gpGlobals->curtime + m_flChargeTime;
-		
-		if ( gpGlobals->curtime > m_flDisChargeTime )
-		{
-		    m_flChargeTime = 0;
-		}
-	}
-} */
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------

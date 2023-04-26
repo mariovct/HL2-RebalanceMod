@@ -57,7 +57,7 @@ int g_fCombineQuestion;				// true if an idle grunt asked a question. Cleared wh
 #define COMBINE_GUN_CROUCHING_POSITION	Vector( 0, 0, 36 )
 #define COMBINE_SHOTGUN_STANDING_POSITION	Vector( 0, 0, 36 )
 #define COMBINE_SHOTGUN_CROUCHING_POSITION	Vector( 0, 0, 36 )
-#define COMBINE_MIN_CROUCH_DISTANCE		256.0
+#define COMBINE_MIN_CROUCH_DISTANCE		128.0
 
 //-----------------------------------------------------------------------------
 // Static stuff local to this file.
@@ -334,7 +334,7 @@ void CNPC_Combine::Spawn( void )
 
 	//	CapabilitiesAdd( bits_CAP_TURN_HEAD | bits_CAP_MOVE_GROUND | bits_CAP_MOVE_JUMP | bits_CAP_MOVE_CLIMB);
 	// JAY: Disabled jump for now - hard to compare to HL1
-	CapabilitiesAdd( bits_CAP_TURN_HEAD | bits_CAP_MOVE_GROUND );
+	CapabilitiesAdd( bits_CAP_TURN_HEAD | bits_CAP_MOVE_GROUND | bits_CAP_MOVE_JUMP );
 
 	CapabilitiesAdd( bits_CAP_AIM_GUN );
 
@@ -577,23 +577,23 @@ float CNPC_Combine::MaxYawSpeed( void )
 	{
 	case ACT_TURN_LEFT:
 	case ACT_TURN_RIGHT:
-		return 90;
+		return 45;
 		break;
 	case ACT_RUN:
 	case ACT_RUN_HURT:
-		return 70;
+		return 15;
 		break;
 	case ACT_WALK:
 	case ACT_WALK_CROUCH:
-		return 50;
+		return 25;
 		break;
 	case ACT_RANGE_ATTACK1:
 	case ACT_RANGE_ATTACK2:
 	case ACT_MELEE_ATTACK1:
 	case ACT_MELEE_ATTACK2:
-		return 70;
+		return 35;
 	default:
-		return 70;
+		return 35;
 		break;
 	}
 }
@@ -631,11 +631,11 @@ bool CNPC_Combine::ShouldMoveAndShoot()
 		return false;
 	}
 
- 	if( IsCurSchedule( SCHED_COMBINE_TAKE_COVER1, false ) )
+ 	/* if( IsCurSchedule( SCHED_COMBINE_TAKE_COVER1, false ) )
 	{
 		m_flStopMoveShootTime = gpGlobals->curtime + random->RandomFloat( 0.4f, 0.6f );
 		return false; 
-	} 
+	}  */
 	
 	if ( BaseClass::ShouldMoveAndShoot() )
 	{
@@ -1437,10 +1437,7 @@ void CNPC_Combine::BuildScheduleTestBits( void )
 		ClearCustomInterruptCondition( COND_HEAVY_DAMAGE );
 	}
 	
-	bool m_bIsFlanking = IsCurSchedule( SCHED_COMBINE_FLANK_ENEMY, false );
-	bool m_bIsEstablishingLOF = IsCurSchedule( SCHED_COMBINE_ESTABLISH_LINE_OF_FIRE, false );
-	
-	if ( ( m_bIsFlanking || m_bIsEstablishingLOF ) && GetEnemy() != NULL )//bookmark
+	if ( IsRunningApproachEnemySchedule() && GetEnemy() != NULL )//bookmark
 	{
 	//	if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) && m_flTimeSawEnemyAgain != NULL )
 	//	{
@@ -1816,7 +1813,7 @@ int CNPC_Combine::SelectCombatSchedule()
 				// Start with trying to see if a grenade can be thrown!
 				return SCHED_RANGE_ATTACK2;
 			}
-			else if ( CanOccupyAttackSlot() )
+			if ( CanOccupyAttackSlot() )
 			{
 				// Try to charge in and break the enemy's cover!
 				return SCHED_ESTABLISH_LINE_OF_FIRE;
@@ -2186,8 +2183,9 @@ int CNPC_Combine::SelectScheduleAttack()
 #endif
 
 		// Engage if allowed
-		if ( CanOccupyAttackSlot() )
+		if ( CanOccupyAttackSlot() || IsRunningApproachEnemySchedule() )
 		{
+			DesireCrouch();
 			return SCHED_RANGE_ATTACK1;
 		}
 		
@@ -2200,7 +2198,6 @@ int CNPC_Combine::SelectScheduleAttack()
 			}
 		}
 		
-	//	DesireCrouch();
 		return SCHED_TAKE_COVER_FROM_ENEMY;
 	}
 
@@ -2337,21 +2334,19 @@ int CNPC_Combine::TranslateSchedule( int scheduleType )
 				// do so!
 				return SCHED_COMBINE_AR2_ALTFIRE;
 			}
-
-			// if( IsUsingTacticalVariant( TACTICAL_VARIANT_PRESSURE_ENEMY ) && !IsRunningBehavior() )
-			// {
-				// if( CanOccupyAttackSlot() )
-				// {
-					// return SCHED_COMBINE_PRESS_ATTACK;
-				// }
-			// }
-			
-			if ( random->RandomInt(0,1) )
+		
+		// Random schedules.
+		switch( random->RandomInt(0,1) )
 			{
+			case 0:	
+				return SCHED_COMBINE_ESTABLISH_LINE_OF_FIRE;
+				
+			case 1:	
 				return SCHED_COMBINE_FLANK_ENEMY;
+				
+			//case 2:
+			//	return SCHED_COMBINE_ENTER_OVERWATCH;
 			}
-
-			return SCHED_COMBINE_ESTABLISH_LINE_OF_FIRE;
 		}
 		break;
 	case SCHED_HIDE_AND_RELOAD:
@@ -3344,11 +3339,11 @@ WeaponProficiency_t CNPC_Combine::CalcWeaponProficiency( CBaseCombatWeapon *pWea
 	{
 		if( IsElite() )
 		{
-			return WEAPON_PROFICIENCY_VERY_GOOD;
+			return WEAPON_PROFICIENCY_GOOD;
 		}
 		else
 		{
-			return WEAPON_PROFICIENCY_GOOD;
+			return WEAPON_PROFICIENCY_AVERAGE;
 		}
 	}
 	else if( FClassnameIs( pWeapon, "weapon_shotgun" )	)
@@ -3362,7 +3357,7 @@ WeaponProficiency_t CNPC_Combine::CalcWeaponProficiency( CBaseCombatWeapon *pWea
 	}
 	else if( FClassnameIs( pWeapon, "weapon_smg1" ) )
 	{
-		return WEAPON_PROFICIENCY_VERY_GOOD;
+		return WEAPON_PROFICIENCY_GOOD;
 	}
 
 	return BaseClass::CalcWeaponProficiency( pWeapon );
@@ -3543,6 +3538,7 @@ int CNPC_Combine::OnTakeDamage_Alive( const CTakeDamageInfo &inputInfo )
 		// being killed, consider running off and hiding.
 		m_nRecentDamage += info.GetDamage();
 		m_flRecentDamageTime = gpGlobals->curtime;
+		
 	}
 
 	return BaseClass::OnTakeDamage_Alive( info ); 
@@ -3713,9 +3709,9 @@ DEFINE_SCHEDULE
  "		TASK_SPEAK_SENTENCE				1"
  "		TASK_RUN_PATH					0"
  "		TASK_WAIT_FOR_MOVEMENT			0"
- "		TASK_COMBINE_IGNORE_ATTACKS		0.0"
- "		TASK_SET_SCHEDULE				SCHEDULE:SCHED_COMBAT_FACE"
- "	"
+ "		TASK_STOP_MOVING		0"
+ "		TASK_SET_ACTIVITY		ACTIVITY:ACT_IDLE"
+ "		TASK_WAIT_FACE_ENEMY			3"
  "	Interrupts "
  "		COND_NEW_ENEMY"
  "		COND_ENEMY_DEAD"
@@ -3742,7 +3738,9 @@ DEFINE_SCHEDULE
 	"		TASK_SPEAK_SENTENCE						1"
 	"		TASK_RUN_PATH							0"
 	"		TASK_WAIT_FOR_MOVEMENT					0"
-	"		TASK_SET_SCHEDULE						SCHEDULE:SCHED_COMBAT_FACE"
+	"		TASK_STOP_MOVING		0"
+	"		TASK_SET_ACTIVITY		ACTIVITY:ACT_IDLE"
+	"		TASK_WAIT_FACE_ENEMY			3"
 	""
 	"	Interrupts"
 	"		COND_NEW_ENEMY"
@@ -3925,6 +3923,7 @@ DEFINE_SCHEDULE
  "		COND_HEAR_DANGER"
  "		COND_HEAR_MOVE_AWAY"
  "		COND_NEW_ENEMY"
+ "		COND_TOO_FAR_TO_ATTACK"
  )
 
  //=========================================================

@@ -249,24 +249,27 @@ void CHudCrosshair::Paint( void )
 	if( bBehindCamera )
 		return;
 
-	float flWeaponScale = 1.f;
+	float flWeaponScale = 1;
 	int iTextureW = m_pCrosshair->Width();
 	int iTextureH = m_pCrosshair->Height();
 	C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
-	if ( pWeapon )
+	if ( pWeapon && !m_pCrosshair->bRenderUsingFont )
 	{
-		pWeapon->GetWeaponCrosshairScale( flWeaponScale );
+		//pWeapon->GetWeaponCrosshairScale( flWeaponScale );
+		flWeaponScale = m_pCrosshair->Scale();
 	}
-
-	float flPlayerScale = 1.0f;
-#ifdef TF_CLIENT_DLL
-	Color clr( cl_crosshair_red.GetInt(), cl_crosshair_green.GetInt(), cl_crosshair_blue.GetInt(), 255 );
-	flPlayerScale = cl_crosshair_scale.GetFloat() / 32.0f;  // the player can change the scale in the options/multiplayer tab
-#else
+	
+	// Default sizes:
+	float flScreenScaleWidth = (float)ScreenWidth() / 2560.0;
+	float flScreenScaleHeight = (float)ScreenHeight() / 1440.0;
+	
+	// Using only one seems to preserve shape better.
+	float flScalar = MAX(flScreenScaleWidth, flScreenScaleHeight);
+	
 	Color clr = m_clrCrosshair;
-#endif
-	float flWidth = flWeaponScale * flPlayerScale * (float)iTextureW;
-	float flHeight = flWeaponScale * flPlayerScale * (float)iTextureH;
+	
+	float flWidth = flWeaponScale * flScalar * (float)iTextureW;
+	float flHeight = flWeaponScale * flScalar * (float)iTextureH;
 	int iWidth = (int)( flWidth + 0.5f );
 	int iHeight = (int)( flHeight + 0.5f );
 	int iX = (int)( x + 0.5f );

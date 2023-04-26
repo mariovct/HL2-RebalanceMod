@@ -697,20 +697,20 @@ void C_BaseExplosionEffect::CreateMisc( void )
 //-----------------------------------------------------------------------------
 void C_BaseExplosionEffect::CreateDynamicLight( void )
 {
-	if ( m_fFlags & TE_EXPLFLAG_NODLIGHTS )
-		return;
+//	if ( m_fFlags & TE_EXPLFLAG_NODLIGHTS )
+//		return;
 
 	dlight_t *dl = effects->CL_AllocDlight( 0 );
 	
 	VectorCopy (m_vecOrigin, dl->origin);
 	
-	dl->decay	= 200;
 	dl->radius	= 512;
 	dl->color.r = 255;
 	dl->color.g = 172;
 	dl->color.b = 84;
+	dl->decay = dl->radius / 0.1;
 	dl->color.exponent = 5;
-	dl->die		= gpGlobals->curtime + 0.1f;
+	dl->die	= gpGlobals->curtime + 0.15f;
 }
 
 //-----------------------------------------------------------------------------

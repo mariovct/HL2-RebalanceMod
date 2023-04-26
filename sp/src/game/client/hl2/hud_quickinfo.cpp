@@ -260,6 +260,9 @@ void CHUDQuickInfo::Paint()
 	// if the crosshair is behind the camera, don't draw it
 	if( bBehindCamera )
 		return;
+	
+	if ( !hud_quickinfo.GetInt() )
+		return;
 
 	int		xCenter	= (int)fX;
 	int		yCenter = (int)fY - m_icon_lb->Height() / 2;
@@ -334,15 +337,12 @@ void CHUDQuickInfo::Paint()
 	clrNormal[3] = 255 * scalar;
 	m_icon_c->DrawSelf( xCenter, yCenter, clrNormal );
 
-	if( IsX360() )
-	{
+	//if( IsX360() )
+	//{
 		// Because the fixed reticle draws on half-texels, this rather unsightly hack really helps
 		// center the appearance of the quickinfo on 360 displays.
 		xCenter += 1;
-	}
-
-	if ( !hud_quickinfo.GetInt() )
-		return;
+	//}
 
 	int	sinScale = (int)( fabs(sin(gpGlobals->curtime*8.0f)) * 128.0f );
 

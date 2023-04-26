@@ -180,63 +180,44 @@ void C_RollerMine::Simulate( void )
 	if ( gpGlobals->frametime <= 0.0f )
 		return;
 	
-	//Normal actions
-	 if ( !m_bIsOpen && !m_bHackedByAlyx && !m_bPowerDown )
-	 {
+	//Normal
+	if ( m_bIsOpen && !m_bHackedByAlyx && !m_bPowerDown )
+	{
 		dlight_t *dl = effects->CL_AllocDlight ( index );
 		dl->origin = GetAbsOrigin();
- 		dl->origin[2] += 0;
-		dl->color.r = 165;
-		dl->color.g = 235;
-		dl->color.b = 255;
-		dl->radius  = 40;
-		dl->die = gpGlobals->curtime + 0.001;
-	 }
-	 else if ( m_bIsOpen && !m_bHackedByAlyx && !m_bPowerDown )
-	 {
-		dlight_t *dl = effects->CL_AllocDlight ( index );
-		dl->origin = GetAbsOrigin();
- 		dl->origin[2] += 0;
 		dl->color.r = 190;
 		dl->color.g = 240;
 		dl->color.b = 250;
 		dl->radius  = 128;
-		dl->die = gpGlobals->curtime + 0.001;
-	 }
-	 //Hacked actions
-	 if ( !m_bIsOpen && m_bHackedByAlyx && !m_bPowerDown )
-	 {
+		dl->die = gpGlobals->curtime + 0.1;
+		dl->decay = 512;
+		dl->style = 1;
+	}
+	//Hacked
+	if ( m_bIsOpen && m_bHackedByAlyx && !m_bPowerDown )
+	{
 		dlight_t *dl = effects->CL_AllocDlight ( index );
 		dl->origin = GetAbsOrigin();
- 		dl->origin[2] += 0;
-		dl->color.r = 255;
-		dl->color.g = 212;
-		dl->color.b = 64;
-		dl->radius  = 80;
-		dl->die = gpGlobals->curtime + 0.001;
-	 }
-	 else if ( m_bIsOpen && m_bHackedByAlyx && !m_bPowerDown )
-	 {
-		dlight_t *dl = effects->CL_AllocDlight ( index );
-		dl->origin = GetAbsOrigin();
- 		dl->origin[2] += 0;
 		dl->color.r = 240;
 		dl->color.g = 200;
 		dl->color.b = 80;
 		dl->radius  = 128;
-		dl->die = gpGlobals->curtime + 0.001;
-	 }
-	 //Exploding
-	 else if ( m_bPowerDown )
-	 {
+		dl->die = gpGlobals->curtime + 0.1;
+		dl->decay = 512;
+		dl->style = 1;
+	}
+	//Exploding
+	if ( m_bPowerDown )
+	{
 		dlight_t *dl = effects->CL_AllocDlight ( index );
 		dl->origin = GetAbsOrigin();
- 		dl->origin[2] += 0;
 		dl->color.r = 255;
 		dl->color.g = 64;
 		dl->color.b = 64;
 		dl->radius  = 128;
-		dl->die = gpGlobals->curtime + 0.001;
+		dl->die = gpGlobals->curtime + 0.1;
+		dl->decay = 512;
+		dl->style = 1;
 	 }
 	 
 }

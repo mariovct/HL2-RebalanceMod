@@ -112,7 +112,7 @@ public:
 	// Output :
 	//-----------------------------------------------------------------------------
 
-	void Explode( float magnitude )
+	void Explode( float magnitude, float damage )
 	{
 		//Create a concussive explosion
 		CPASFilter filter( GetAbsOrigin() );
@@ -150,7 +150,7 @@ public:
 			);
 
 		//Do the radius damage
-		RadiusDamage( CTakeDamageInfo( this, GetOwnerEntity(), 200, DMG_BLAST|DMG_DISSOLVE ), GetAbsOrigin(), 256, CLASS_NONE, NULL );
+		RadiusDamage( CTakeDamageInfo( this, GetOwnerEntity(), damage, DMG_BLAST|DMG_DISSOLVE ), GetAbsOrigin(), 256, CLASS_NONE, NULL );
 
 		UTIL_Remove( this );
 	}
@@ -171,7 +171,7 @@ END_DATADESC()
 //-----------------------------------------------------------------------------
 // Purpose: Create a concussive blast entity and detonate it
 //-----------------------------------------------------------------------------
-void CreateConcussiveBlast( const Vector &origin, const Vector &surfaceNormal, CBaseEntity *pOwner, float magnitude )
+void CreateConcussiveBlast( const Vector &origin, const Vector &surfaceNormal, CBaseEntity *pOwner, float magnitude, float damage )
 {
 	QAngle angles;
 	VectorAngles( surfaceNormal, angles );
@@ -179,7 +179,7 @@ void CreateConcussiveBlast( const Vector &origin, const Vector &surfaceNormal, C
 
 	if ( pBlast )
 	{
-		pBlast->Explode( magnitude );
+		pBlast->Explode( magnitude, damage );
 	}
 }
 

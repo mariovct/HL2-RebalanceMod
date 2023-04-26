@@ -200,34 +200,40 @@ void C_NPC_Manhack::Simulate( void )
 	{
 		dlight_t *dl = effects->CL_AllocDlight ( index );
 		dl->origin = GetAbsOrigin();
- 		dl->origin[2];
-		dl->color.r = 4;
-		dl->color.g = 2;
+		dl->color.r = 100;
+		dl->color.g = 50;
 		dl->color.b = 0;
-		dl->radius = random->RandomFloat(128,192);
-		dl->die = gpGlobals->curtime + 0.05;
+		dl->color.exponent = -4;
+		dl->radius = 128;
+		dl->decay = dl->radius / 0.1;
+		dl->die = gpGlobals->curtime + 0.1;
+		dl->style = 4;
 	}
 	else if ( m_bIsCharging )
 	{
 		dlight_t *dl = effects->CL_AllocDlight ( index );
 		dl->origin = GetAbsOrigin();
- 		dl->origin[2];
-		dl->color.r = 8;
+		dl->color.r = 200;
 		dl->color.g = 0;
 		dl->color.b = 0;
-		dl->radius = random->RandomFloat(192,384);
-		dl->die = gpGlobals->curtime + 0.05;
+		dl->color.exponent = -4;
+		dl->radius = 192;
+		dl->decay = dl->radius / 0.1;
+		dl->die = gpGlobals->curtime + 0.1;
+		dl->style = 6;
 	}
 	else
 	{
 		dlight_t *dl = effects->CL_AllocDlight ( index );
 		dl->origin = GetAbsOrigin();
- 		dl->origin[2];
-		dl->color.r = 4;
+		dl->color.r = 150;
 		dl->color.g = 0;
 		dl->color.b = 0;
-		dl->radius = random->RandomFloat(128,192);
-		dl->die = gpGlobals->curtime + 0.05;
+		dl->color.exponent = -4;
+		dl->radius = 128;
+		dl->decay = dl->radius / 0.1;
+		dl->die = gpGlobals->curtime + 0.1;
+		dl->style = 5;
 	}
 		
 }

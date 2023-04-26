@@ -109,26 +109,6 @@ bool C_PropCombineBall::InitMaterials( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void C_PropCombineBall::Simulate( void )
-{
-	if ( gpGlobals->frametime <= 0.0f )
-		return;
-	
-	if ( !m_bEmit )
-		return;
-
-	dlight_t *dl = effects->CL_AllocDlight ( index );
-	dl->origin = GetAbsOrigin();
- 	dl->origin[2] += 16;
-	dl->color.r = 207;
-	dl->color.g = 255;
-	dl->color.b = 255;
-	dl->radius  = 64;
-	dl->die = gpGlobals->curtime + 0.001;
-}
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
 void C_PropCombineBall::DrawMotionBlur( void )
 {
 	float color[3];
@@ -301,13 +281,54 @@ int C_PropCombineBall::DrawModel( int flags )
 
 	return 1;
 }
-
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void ImpactLight( const CEffectData &data )
+{
+	int entityIndex = ClientEntityList().HandleToEntIndex( data.m_hEntity );
+	if ( entityIndex >= 0 )
+	{
+		dlight_t *dl = effects->CL_AllocDlight( entityIndex );
+		dl->origin = data.m_vOrigin;
+		dl->color.r = 207;
+		dl->color.g = 255;
+		dl->color.b = 255;
+		dl->color.exponent = 1;
+		dl->radius  = 96;
+		dl->die = gpGlobals->curtime + 0.2;
+		dl->decay = 512;
+		dl->style = 1;
+	}
+}
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void ExplosionLight( const CEffectData &data )
+{
+	int entityIndex = ClientEntityList().HandleToEntIndex( data.m_hEntity );
+	if ( entityIndex >= 0 )
+	{
+		dlight_t *dl = effects->CL_AllocDlight( entityIndex );
+		dl->origin = data.m_vOrigin;
+		dl->color.r = 207;
+		dl->color.g = 255;
+		dl->color.b = 255;
+		dl->color.exponent = 2;
+		dl->radius  = 256;
+		dl->die = gpGlobals->curtime + 0.7;
+		dl->decay = 512;
+		dl->style = 1;
+	}
+}
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : &data - 
 //-----------------------------------------------------------------------------
 void CombineBallImpactCallback( const CEffectData &data )
 {
+	ImpactLight( data );
+	
 	// Quick flash
 	FX_AddQuad( data.m_vOrigin,
 				data.m_vNormal,
@@ -352,6 +373,7 @@ DECLARE_CLIENT_EFFECT( "cball_bounce", CombineBallImpactCallback );
 //-----------------------------------------------------------------------------
 void CombineBallExplosionCallback( const CEffectData &data )
 {
+	ExplosionLight( data );
 	Vector normal(0,0,1);
 
 	// Throw sparks

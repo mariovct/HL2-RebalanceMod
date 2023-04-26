@@ -33,6 +33,7 @@ public:
 	void	DelayedAttack( void );
 
 	const char *GetTracerType( void ) { return "AR2Tracer"; }
+	void		GetWeaponCrosshairScale( float &flScale ) { flScale = 5.0; }
 
 	void	AddViewKick( void );
 
@@ -52,8 +53,8 @@ public:
 	// NPC
 	int		GetMinBurst( void ) { return 4; }
 	int		GetMaxBurst( void ) { return 4; }
-	float	GetMinRestTime( void ) { return 0.8f; }
-	float	GetMaxRestTime( void ) { return 0.8f; }
+	float	GetMinRestTime( void ) { return 0.6f; }
+	float	GetMaxRestTime( void ) { return 1.0f; }
 
 	bool	CanHolster( void );
 	bool	Reload( void );

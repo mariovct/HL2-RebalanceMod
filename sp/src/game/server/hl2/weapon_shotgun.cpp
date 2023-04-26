@@ -27,6 +27,10 @@ extern ConVar sk_plr_num_shotgun_pellets;
 extern ConVar sk_plr_num_shotgun_pellets_double;
 extern ConVar sk_npc_num_shotgun_pellets;
 
+// HL1 Values
+#define VECTOR_CONE_SHOTGUN	Vector( 0.08716, 0.04362, 0.00  )// 10 degrees by 5 degrees
+#define VECTOR_CONE_DOUBLESHOTGUN Vector( 0.17365, 0.04362, 0.00 ) // 20 degrees by 5 degrees
+
 extern ConVar sk_alternate_recoil;
 
 class CWeaponShotgun : public CBaseHLCombatWeapon
@@ -41,7 +45,7 @@ private:
 	bool	m_bNeedPump;		// When emptied completely
 	bool	m_bDelayedFire1;	// Fire primary when finished reloading
 	bool	m_bDelayedFire2;	// Fire secondary when finished reloading
-	float 	m_flSpreadMultiplier;
+	bool 	m_bAltFiring;
 	int 	m_iBurstSize;
 
 public:
@@ -64,7 +68,12 @@ public:
 		}
 		if ( GetOwner() && pPlayer )
 		{
-			cone = VECTOR_CONE_6DEGREES * m_flSpreadMultiplier; // 4 * 2
+			cone = VECTOR_CONE_SHOTGUN;
+	
+			if ( m_bAltFiring )
+			{
+				cone = VECTOR_CONE_DOUBLESHOTGUN;
+			}
 		}
 		else
 		{
@@ -115,6 +124,7 @@ PRECACHE_WEAPON_REGISTER(weapon_shotgun);
 BEGIN_DATADESC( CWeaponShotgun )
 
 	DEFINE_FIELD( m_bNeedPump, FIELD_BOOLEAN ),
+	DEFINE_FIELD( m_bAltFiring, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bDelayedFire1, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bDelayedFire2, FIELD_BOOLEAN ),
 
@@ -201,7 +211,7 @@ void CWeaponShotgun::FireNPCPrimaryAttack( CBaseCombatCharacter *pOperator, bool
 		vecShootDir = npc->GetActualShootTrajectory( vecShootOrigin );
 	}
 
-	pOperator->FireBullets( sk_npc_num_shotgun_pellets.GetInt(), vecShootOrigin, vecShootDir, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0 );
+	pOperator->FireBullets( sk_npc_num_shotgun_pellets.GetInt(), vecShootOrigin, vecShootDir, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 1 );
 }
 
 //-----------------------------------------------------------------------------
@@ -460,7 +470,7 @@ void CWeaponShotgun::DryFire( void )
 //-----------------------------------------------------------------------------
 void CWeaponShotgun::PrimaryAttack( void )
 {
-	m_flSpreadMultiplier = 1;
+	m_bAltFiring = false;
 	// Only the player fires this way so we can cast
 	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
 
@@ -538,7 +548,7 @@ void CWeaponShotgun::SecondaryAttack( void )
 	m_flNextSecondaryAttack = gpGlobals->curtime + 1.0;
 
 	// Pick up the rest of the burst through the think function.
-	SetNextThink( gpGlobals->curtime + 0.28 );
+	SetNextThink( gpGlobals->curtime + 0.14 );
 }
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -547,7 +557,7 @@ void CWeaponShotgun::SecondaryAttack( void )
 //-----------------------------------------------------------------------------
 void CWeaponShotgun::BurstThink( void )
 {
-	m_flSpreadMultiplier = 1.34;
+	m_bAltFiring = true;
 	// Only the player fires this way so we can cast
 	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
 
@@ -563,14 +573,7 @@ void CWeaponShotgun::BurstThink( void )
 	WeaponSound(SINGLE);
 
 	pPlayer->DoMuzzleFlash();
-	if ( m_iBurstSize > 1)
-	{
-		SendWeaponAnim( ACT_VM_SECONDARYATTACK );
-	}
-	else
-	{
-		SendWeaponAnim( ACT_VM_PRIMARYATTACK );
-	}
+	SendWeaponAnim( ACT_VM_SECONDARYATTACK );
 
 	// player "shoot" animation
 	pPlayer->SetAnimation( PLAYER_ATTACK1 );

@@ -28,7 +28,6 @@ protected:
 
 	void	DrawMotionBlur( void );
 	void	DrawFlicker( void );
-	void    Simulate( void );
 	virtual bool	InitMaterials( void );
 
 	Vector	m_vecLastOrigin;

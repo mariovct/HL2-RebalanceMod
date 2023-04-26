@@ -324,6 +324,7 @@ public:
 	bool			AimCannonAt( CBaseEntity *pEntity, float flInterval );
 	void			FireCannon();
 	void			CannonHitThink();
+	bool 			ShouldFireCannon();
 
 	//---------------------------------
 	// Collision handling

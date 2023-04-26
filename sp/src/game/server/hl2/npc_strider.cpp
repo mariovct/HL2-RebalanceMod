@@ -112,12 +112,13 @@ ConVar strider_missile_suppress_time( "strider_missile_suppress_time", "3" );
 ConVar strider_use_offensive_warp_cannon( "strider_use_offensive_warp_cannon", "1" );
 ConVar strider_offensive_warp_cannon_cooldown( "strider_offensive_warp_cannon_cooldown", "10.0" );
 
+ConVar sk_npc_dmg_strider_blast( "sk_npc_dmg_strider_blast", "200" );
 
 //-----------------------------------------------------------------------------
 
 float GetCurrentGravity( void );
 
-extern void CreateConcussiveBlast( const Vector &origin, const Vector &surfaceNormal, CBaseEntity *pOwner, float magnitude );
+extern void CreateConcussiveBlast( const Vector &origin, const Vector &surfaceNormal, CBaseEntity *pOwner, float magnitude, float damage );
 
 //-----------------------------------------------------------------------------
 
@@ -132,9 +133,9 @@ enum bodygroups
 #define STRIDER_SHOOT_ON_TARGET_TIME			2.0 // How much of DEFAULT_SHOOT_DURATION is spent on-target (vs. stitching up to a target)
 #define STRIDER_SHOOT_VARIATION					1.0 // up to 1 second of variance
 #define STRIDER_SHOOT_DOWNTIME					1.0 // This much downtime between bursts
-#define STRIDER_SUBSEQUENT_TARGET_DURATION		1.5 // Spend this much time stitching to targets chosen by distributed fire.
-#define STRIDER_IGNORE_TARGET_DURATION			1.0
-#define STRIDER_IGNORE_PLAYER_DURATION			1.5
+#define STRIDER_SUBSEQUENT_TARGET_DURATION		3 // Spend this much time stitching to targets chosen by distributed fire.
+#define STRIDER_IGNORE_TARGET_DURATION			2.5
+#define STRIDER_IGNORE_PLAYER_DURATION			2.5
 #define STRIDER_DEFAULT_RATE_OF_FIRE			5	// Rounds per second
 
 #define STRIDER_EP1_RATE_OF_FIRE			10.0f
@@ -511,6 +512,7 @@ void CNPC_Strider::Spawn()
 	m_flSpeedScale = m_flTargetSpeedScale = 1.0;
 	m_NPCState = NPC_STATE_NONE;
 	m_bloodColor = DONT_BLEED;
+	m_flShootCooldown = 0;
 	
 	m_iHealth = sk_strider_health.GetFloat();
 	m_iMaxHealth = 500;
@@ -992,45 +994,27 @@ void CNPC_Strider::GatherConditions()
 		}
 	}
 	
-	//	DevMsg("PART0\n");
-		if ( ( !GetCannonTarget() || m_bUpDateCannonTarget ) && strider_use_offensive_warp_cannon.GetBool() )	
+	if ( ShouldFireCannon() )
+	{
+		Vector vecTarget = GetEnemies()->LastSeenPosition( GetEnemy() );
+		CAI_BaseNPC *pCTarget = CreateCustomTarget( vecTarget, 20 );
+						
+		if ( m_hLastCannonTarget != NULL && pCTarget->GetAbsOrigin() == m_hLastCannonTarget->GetAbsOrigin() )
 		{
-			//DevMsg("PART1\n");
-			if ( m_flShootCooldown < gpGlobals->curtime )
-			{
-				//DevMsg("PART2\n");
-				if ( GetEnemy() /* && GetEnemy()->IsPlayer() */ )
-				{
-					//DevMsg("PART3\n");
+			pCTarget = NULL;
+		} 
 					
-					CAI_BaseNPC *pCTarget = CreateCustomTarget( GetEnemies()->LastSeenPosition( GetEnemy() ), 20 );
-					AddEntityRelationship( pCTarget, D_HT, -1 );
-					m_flShootCooldown = gpGlobals->curtime + strider_offensive_warp_cannon_cooldown.GetFloat();
-						
-					if ( m_hLastCannonTarget != NULL && pCTarget->GetAbsOrigin() == m_hLastCannonTarget->GetAbsOrigin() )
-					{
-						pCTarget = NULL;
-						//DevMsg("Stopped myself\n");
-					} 
-					
-					if ( pCTarget != NULL )
-					{
-						//DevMsg("PART4\n");
-						
-						// Update the targets position until ready to fire.
-						m_bUpDateCannonTarget = true;
-						
-						m_hCannonTarget = pCTarget;
-						m_AttemptCannonLOSTimer.Force();
-					}
-				}
-			}
-		}
-		else
+		if ( pCTarget != NULL )
 		{
+			// Update the targets position until ready to fire.
+			m_bUpDateCannonTarget = true;
+			
 			m_flShootCooldown = gpGlobals->curtime + strider_offensive_warp_cannon_cooldown.GetFloat();
-			DevMsg("Not yet\n");
+						
+			m_hCannonTarget = pCTarget;
+			m_AttemptCannonLOSTimer.Force();
 		}
+	}
 
 	//---------------------------------
 
@@ -1157,11 +1141,11 @@ void CNPC_Strider::GatherConditions()
 				{
 					if( m_pMinigun->IsOnTarget( 3 ) && !FClassnameIs( GetEnemy(), "npc_bullseye" ) )
 					{
-						if( m_iVisibleEnemies > 1 )
+						if( m_iVisibleEnemies > 1 && !HasCondition( COND_SEE_ENEMY ) )
 						{
 							// Time to ignore this guy for a little while and switch targets.
 							GetEnemies()->SetTimeValidEnemy( GetEnemy(), gpGlobals->curtime + ( STRIDER_IGNORE_TARGET_DURATION * m_iVisibleEnemies ) );
-							SetEnemy( NULL, false );
+						//	SetEnemy( NULL, false );
 							ChooseEnemy();
 						}
 						else if( GetEnemy()->IsPlayer() && GetEnemy() == m_pMinigun->GetTarget() )
@@ -1949,7 +1933,7 @@ void CNPC_Strider::HandleAnimEvent( animevent_t *pEvent )
 		}
 		break;
 	case STRIDER_AE_CANNONHIT:
-		CreateConcussiveBlast( m_blastHit, m_blastNormal, this, 3.5 );
+		CreateConcussiveBlast( m_blastHit, m_blastNormal, this, 3.5, sk_npc_dmg_strider_blast.GetFloat() );
 		break;
 
 	case STRIDER_AE_SHOOTMINIGUN:
@@ -2149,29 +2133,6 @@ void CNPC_Strider::InputSetCannonTarget( inputdata_t &inputdata )
 			return;
 		}
 	}
-    /*if( GetEnemy() && !HasCondition(COND_SEE_ENEMY) )
-    {
-    		float flTime;
-    		
-    		CBaseEntity *pEnemy = GetEnemy();
-    
-    		flTime = gpGlobals->curtime - GetEnemies()->LastTimeSeen( GetEnemy() );
-    	{
-    	    if ( flTime <= STRIDER_CANNON_TOLERANCE )//bookmark
-    	    {
-    	    	CAI_BaseNPC *pCTarget = CreateCustomTarget( GetEnemies()->LastSeenPosition( GetEnemy() ), 2.0f);
-    	    	AddEntityRelationship( pCTarget, IRelationType(pEnemy), IRelationPriority(pEnemy) );
-				
-				pCTarget = pTarget;
-				
-				m_hCannonTarget = pTarget;
-				m_AttemptCannonLOSTimer.Force();
-				return;
-    	    }
-    
-    	    m_hCannonTarget = NULL;
-    	}
-	}*/
 }
 
 //---------------------------------------------------------
@@ -2700,27 +2661,6 @@ bool CNPC_Strider::WeaponLOSCondition(const Vector &ownerPos, const Vector &targ
 		vRootOffset.z = gm_zMinigunDist;
 		vBarrelOffset = gm_vLocalRelativePositionMinigun;
 	}
-	
-	/* if ( !GetCannonTarget() && !HasCondition( COND_STRIDER_MINIGUN_SHOOTING ))
-	{
-		float m_flTime;
-		float m_flShootCooldown = 0;
-    	m_flTime = gpGlobals->curtime - GetEnemies()->LastTimeSeen( GetEnemy() );
-		
-    	if ( m_flTime >= 3 && m_flShootCooldown < gpGlobals->curtime )
-		{
-			if ( GetEnemy() && !HasCondition( COND_SEE_ENEMY ) )
-			{
-				CAI_BaseNPC *pTarget = CreateCustomTarget( GetEnemies()->LastSeenPosition( GetEnemy() ), 0.1 );
-				
-				m_hCannonTarget = pTarget;
-				m_AttemptCannonLOSTimer.Force();
-				
-				//m_hCannonTarget = NULL;
-				m_flShootCooldown = gpGlobals->curtime + 5;
-			}
-		}
-	} */
 
 	trace_t tr;
 	AI_TraceLine( ownerPos + vRootOffset, targetPos, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
@@ -4096,7 +4036,16 @@ bool CNPC_Strider::AimCannonAt( CBaseEntity *pEntity, float flInterval )
 	GetAttachment( gm_CannonAttachment, gunMatrix );
 
 	// transform the enemy into gun space
-	m_vecHitPos = pEntity->GetAbsOrigin();
+	trace_t tr;
+	Vector vecShootPos;
+	GetAttachment( gm_CannonAttachment, vecShootPos );
+
+	Vector vecShootDir;
+	vecShootDir = m_hCannonTarget->WorldSpaceCenter() - vecShootPos;
+
+	AI_TraceLine( vecShootPos, vecShootPos + vecShootDir * 8192, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
+	
+	m_vecHitPos = tr.endpos;
 	Vector localEnemyPosition;
 	VectorITransform( pEntity->GetAbsOrigin(), gunMatrix, localEnemyPosition );
 	
@@ -4166,15 +4115,15 @@ void CNPC_Strider::FireCannon()
 	
 	m_bUpDateCannonTarget = false;
 	m_nextShootTime = gpGlobals->curtime + 5;
+	m_flShootCooldown = gpGlobals->curtime + strider_offensive_warp_cannon_cooldown.GetFloat();
 	trace_t tr;
 	Vector vecShootPos;
 	GetAttachment( gm_CannonAttachment, vecShootPos );
 
 	Vector vecShootDir;
 	vecShootDir = m_hCannonTarget->WorldSpaceCenter() - vecShootPos;
-	float flDist = VectorNormalize( vecShootDir );
 
-	AI_TraceLine( vecShootPos, vecShootPos + vecShootDir * flDist, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
+	AI_TraceLine( vecShootPos, vecShootPos + vecShootDir * 8192, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
 	m_blastHit = tr.endpos;
 	m_blastHit += tr.plane.normal * 16;
 	m_blastNormal = tr.plane.normal;
@@ -4197,7 +4146,7 @@ void CNPC_Strider::CannonHitThink()
 	{
 		bool fAlive = pCannonTarget->IsAlive();
 
-		CreateConcussiveBlast( m_blastHit, m_blastNormal, this, 3.5 );
+		CreateConcussiveBlast( m_blastHit, m_blastNormal, this, 3.5, sk_npc_dmg_strider_blast.GetFloat() );
 
 		// If the target was alive, check to make sure it is now dead. If not,
 		// Kill it and warn the designer.
@@ -4536,7 +4485,6 @@ int CNPC_Strider::SelectFailSchedule( int failedSchedule, int failedTask, AI_Tas
 {
 	if( failedSchedule == SCHED_STRIDER_ESTABLISH_LINE_OF_FIRE_CANNON )
 	{
-		
 		m_hLastCannonTarget = m_hCannonTarget;
 		
 		m_bUpDateCannonTarget = false;
@@ -4913,7 +4861,25 @@ void CNPC_Strider::StriderBusterDetached( CBaseEntity *pAttached )
 }
 
 #endif // HL2_EPISODIC
-
+//-----------------------------------------------------------------------------
+// Purpose: Should we use the warp cannon?
+//-----------------------------------------------------------------------------
+bool CNPC_Strider::ShouldFireCannon()
+{
+	if ( !strider_use_offensive_warp_cannon.GetBool() )
+		return false;
+	
+	if ( !GetEnemy() )
+		return false;
+	
+	if ( GetCannonTarget() && !m_bUpDateCannonTarget )	
+		return false;
+	
+	if ( m_flShootCooldown > gpGlobals->curtime )
+		return false;
+	
+	return true;
+}
 //-----------------------------------------------------------------------------
 //
 // Strider Minigun
@@ -5649,7 +5615,7 @@ AI_BEGIN_CUSTOM_NPC( npc_strider, CNPC_Strider )
 		"		TASK_STRIDER_FACE_CANNON_TARGET		0"
 		"		TASK_SET_ACTIVITY					ACTIVITY:ACT_IDLE"
 		//"		TASK_WAIT							1"
-		"		TASK_STRIDER_AIM					1.25"
+		"		TASK_STRIDER_AIM					1.3"
 		"		TASK_STRIDER_FIRE_CANNON			0"
 		"		TASK_WAIT							1"
 		"	"

@@ -42,8 +42,9 @@ public:
 	void	AddViewKick( void );
 	void	SecondaryAttack( void );
 
-	int		GetMinBurst() { return 5; }
-	int		GetMaxBurst() { return 10; }
+	int		GetMinBurst() { return 3; }
+	int		GetMaxBurst() { return 5; }
+
 	//float 	GetBurstCycleRate( void ){ return 0.055; }
 	//int		GetBurstSize( void ){ return 3.0; }
 
@@ -191,7 +192,7 @@ void CWeaponSMG1::FireNPCPrimaryAttack( CBaseCombatCharacter *pOperator, Vector 
 
 	CSoundEnt::InsertSound( SOUND_COMBAT|SOUND_CONTEXT_GUNFIRE, pOperator->GetAbsOrigin(), SOUNDENT_VOLUME_MACHINEGUN, 0.2, pOperator, SOUNDENT_CHANNEL_WEAPON, pOperator->GetEnemy() );
 	pOperator->FireBullets( 1, vecShootOrigin, vecShootDir, VECTOR_CONE_PRECALCULATED,
-		MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 2, entindex(), 0 );
+		MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 1, entindex(), 0 );
 
 	pOperator->DoMuzzleFlash();
 	m_iClip1 = m_iClip1 - 1;
@@ -315,7 +316,7 @@ bool CWeaponSMG1::Reload( void )
 //-----------------------------------------------------------------------------
 void CWeaponSMG1::AddViewKick( void )
 {
-	#define	EASY_DAMPEN			0.0f	//			0.0
+	#define	EASY_DAMPEN			1.0f	//			0.0
 	#define	MAX_VERTICAL_KICK	6.0f	//Degrees	4.0
 	#define	SLIDE_LIMIT			4.0f	//Seconds	8.0
 	
