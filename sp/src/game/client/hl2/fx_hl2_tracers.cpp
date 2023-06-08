@@ -22,6 +22,7 @@ extern Vector GetTracerOrigin( const CEffectData &data );
 extern void FX_TracerSound( const Vector &start, const Vector &end, int iTracerType );
 
 extern ConVar muzzleflash_light;
+extern ConVar dynamic_player_tracers;
 
 
 CLIENTEFFECT_REGISTER_BEGIN( PrecacheTracers )
@@ -182,25 +183,41 @@ DECLARE_CLIENT_EFFECT( "HelicopterTracer", HelicopterTracerCallback );
 //-----------------------------------------------------------------------------
 void FX_PlayerAR2Tracer( const Vector &start, const Vector &end )
 {
-	VPROF_BUDGET( "FX_PlayerAR2Tracer", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
-	
-	Vector	shotDir, dStart, dEnd;
-	float	length;
+	if ( !dynamic_player_tracers.GetBool() )
+	{
+		VPROF_BUDGET( "FX_PlayerAR2Tracer", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
+		
+		Vector	shotDir, dStart, dEnd;
+		float	length;
 
-	//Find the direction of the tracer
-	VectorSubtract( end, start, shotDir );
-	length = VectorNormalize( shotDir );
+		//Find the direction of the tracer
+		VectorSubtract( end, start, shotDir );
+		length = VectorNormalize( shotDir );
 
-	//Randomly place the tracer along this line, with a random length
-	VectorMA( start, random->RandomFloat( 0.0f, 8.0f ), shotDir, dStart );
-	VectorMA( dStart, MIN( length, random->RandomFloat( 256.0f, 1024.0f ) ), shotDir, dEnd );
+		//Randomly place the tracer along this line, with a random length
+		VectorMA( start, random->RandomFloat( 0.0f, 8.0f ), shotDir, dStart );
+		VectorMA( dStart, MIN( length, random->RandomFloat( 256.0f, 1024.0f ) ), shotDir, dEnd );
 
-	//Create the line
-	CFXStaticLine *tracerLine = new CFXStaticLine( "Tracer", dStart, dEnd, random->RandomFloat( 6.0f, 12.0f ), 0.01f, "effects/gunshiptracer", 0 );
-	assert( tracerLine );
+		//Create the line
+		CFXStaticLine *tracerLine = new CFXStaticLine( "Tracer", dStart, dEnd, random->RandomFloat( 6.0f, 12.0f ), 0.01f, "effects/gunshiptracer", 0 );
+		assert( tracerLine );
 
-	//Throw it into the list
-	clienteffects->AddEffect( tracerLine );
+		//Throw it into the list
+		clienteffects->AddEffect( tracerLine );
+	}
+	else
+	{
+		float dist;
+		Vector dir;
+
+		VectorSubtract( end, start, dir );
+		dist = VectorNormalize( dir );
+		float length = random->RandomFloat( 64.0f, 128.0f );
+		float life = ( dist + length ) / 10000;	//NOTENOTE: We want the tail to finish its run as well
+			
+		//Add it
+		FX_AddDiscreetLine( start, dir, 10000, length, dist, random->RandomFloat( 1.5f, 2.5f ), life, "effects/gunshiptracer" );
+	}
 }
 
 

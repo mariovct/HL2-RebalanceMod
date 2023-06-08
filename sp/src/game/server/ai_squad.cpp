@@ -298,6 +298,39 @@ CAI_BaseNPC *CAI_Squad::SquadMemberInRange( const Vector &vecLocation, float flD
 }
 
 //-------------------------------------
+
+CAI_BaseNPC *CAI_Squad::SquadMemberCanSee( const Vector &vecLocation, float flDist )
+{
+	for (int i = 0; i < m_SquadMembers.Count(); i++)
+	{
+		if (m_SquadMembers[i] != NULL 
+		&& m_SquadMembers[i]->FVisible( vecLocation ) 
+		&& (vecLocation - m_SquadMembers[i]->GetAbsOrigin() ).Length2D() <= flDist )
+			return m_SquadMembers[i];
+	}
+	return NULL;
+}
+
+//-------------------------------------
+
+CAI_BaseNPC *CAI_Squad::SquadMemberGoalInRange( const Vector &vecLocation, float flDist )
+{
+	for (int i = 0; i < m_SquadMembers.Count(); i++)
+	{
+		DevMsg("1");
+		if ( m_SquadMembers[i]->GetNavigator()->GetPath() != NULL )
+		{
+			DevMsg("2");
+			Vector VecGoalPos = m_SquadMembers[i]->GetNavigator()->GetGoalPos();
+			NDebugOverlay::Box(  VecGoalPos, Vector(10,10,10), Vector(10,10,10), 255,0,0, true, 5.0 );
+			
+			if (m_SquadMembers[i] != NULL && (vecLocation - VecGoalPos ).Length2D() <= flDist)
+				return m_SquadMembers[i];
+		}
+	}
+	return NULL;
+}
+//-------------------------------------
 // Purpose: Returns the nearest squad member to the given squad member
 //-------------------------------------
 

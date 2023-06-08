@@ -3542,8 +3542,8 @@ bool C_BaseAnimating::DispatchMuzzleEffect( const char *options, bool isFirstPer
 	{
 		// Setup default values.
 		m_iMuzzleFlashColorR = 255;
-		m_iMuzzleFlashColorG = 240;
-		m_iMuzzleFlashColorB = 70;
+		m_iMuzzleFlashColorG = 205;
+		m_iMuzzleFlashColorB = 80;
 		m_iMuzzleFlashRadius = random->RandomFloat(128.0f, 196.0f);
 		m_flMuzzleFlashTime = 0.1;
 		m_flMuzzleFlashIntensity = 1;
@@ -3580,6 +3580,8 @@ bool C_BaseAnimating::DispatchMuzzleEffect( const char *options, bool isFirstPer
 		{
 			// Longer flash
 			m_flMuzzleFlashTime = 0.12;
+			m_iMuzzleFlashColorG = 170;
+			m_iMuzzleFlashColorB = 85;
 			
 			weaponType = MUZZLEFLASH_SHOTGUN;
 		}
@@ -3587,6 +3589,8 @@ bool C_BaseAnimating::DispatchMuzzleEffect( const char *options, bool isFirstPer
 		{
 			// Longer flash
 			m_flMuzzleFlashTime = 0.13;
+			m_iMuzzleFlashColorG = 170;
+			m_iMuzzleFlashColorB = 85;
 			
 			weaponType = MUZZLEFLASH_357;
 		}

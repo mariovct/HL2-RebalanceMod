@@ -309,17 +309,18 @@ bool CAI_BaseNPC::IsJumpLegal( const Vector &startPos, const Vector &apex, const
 	if ( dist > maxDist + 0.1) 
 		return false;
 	
-	// Don't jump laterally unless we're crossing a gap.
+	// BUG: BREAKS SCRIPTED SEQUENCE IN EP1!!
+/* 	// Don't jump laterally unless we're crossing a gap.
 	Vector vecMidPoint = startPos + (endPos - startPos) * 0.5;
 	Vector vecGapPoint = vecMidPoint + Vector(0, 0, -48);
 	
 	trace_t	tr;
 	UTIL_TraceLine(vecMidPoint, vecGapPoint, MASK_NPCSOLID, this, COLLISION_GROUP_NONE, &tr);
-	//DebugDrawLine(vecMidPoint, vecGapPoint, 0, 128, 255, false, 5);
+	//DebugDrawLine(vecMidPoint, vecGapPoint, 0, 128, 255, false, 5); 
 	
 	if( tr.fraction != 1.0 )
 		return false;
-
+*/
 	return true;
 }
 

@@ -24,8 +24,8 @@
 #define	PISTOL_FASTEST_REFIRE_TIME		0.1f
 #define	PISTOL_FASTEST_DRY_REFIRE_TIME	0.22f
 
-#define	PISTOL_ACCURACY_SHOT_PENALTY_TIME		0.1f	// Applied amount of time each shot adds to the time we must recover from
-#define	PISTOL_ACCURACY_MAXIMUM_PENALTY_TIME	1.0f	// Maximum penalty to deal out
+#define	PISTOL_ACCURACY_SHOT_PENALTY_TIME		1.0f	// Applied amount of time each shot adds to the time we must recover from
+#define	PISTOL_ACCURACY_MAXIMUM_PENALTY_TIME	10.0f	// Maximum penalty to deal out
 
 //ConVar	pistol_use_new_accuracy( "pistol_use_new_accuracy", "1" );
 ConVar sk_pistol_can_secondary_attack("sk_pistol_can_secondary_attack", "1" );
@@ -90,6 +90,10 @@ public:
 
 	virtual float GetFireRate( void ) 
 	{
+		if( GetOwner() && GetOwner()->IsNPC() )
+		{
+			return 0.4;
+		}
 		return 0.22f; 
 	}
 
@@ -228,7 +232,7 @@ void CWeaponPistol::PrimaryAttack( void )
 	if (( pOwner->m_nButtons & IN_ATTACK ) && ( pOwner->m_nButtons & IN_ATTACK2 ))
 	return;
 
-	if ( ( gpGlobals->curtime - m_flLastAttackTime ) > 0.5f )
+	if ( ( gpGlobals->curtime - m_flLastAttackTime ) > 0.25f )
 	{
 		m_nNumShotsFired = 0;
 	}
@@ -328,6 +332,9 @@ void CWeaponPistol::BurstThink( void )
 		// HEV suit - indicate out of ammo condition
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0); 
 	}
+	
+	// Add an accuracy penalty which can move past our maximum penalty time if we're really spastic
+	m_flAccuracyPenalty += PISTOL_ACCURACY_SHOT_PENALTY_TIME / 2;
 
 	//Add our view kick in
 	AddViewKick();
@@ -352,11 +359,20 @@ void CWeaponPistol::UpdatePenaltyTime( void )
 	if ( pOwner == NULL )
 		return;
 	
+	if ( pOwner->m_nButtons & IN_ATTACK )
+		return;
+	
+	if ( pOwner->m_nButtons & IN_ATTACK2 )
+		return;
+	
 	// Check our penalty time decay
-	if ( ( ( pOwner->m_nButtons & IN_ATTACK ) == false ) && ( m_flSoonestPrimaryAttack < gpGlobals->curtime ) )
+	if ( m_flSoonestPrimaryAttack < gpGlobals->curtime )
 	{
-		m_flAccuracyPenalty -= gpGlobals->frametime;
+		m_flAccuracyPenalty -= gpGlobals->frametime * m_flAccuracyPenalty * 2;
 		m_flAccuracyPenalty = clamp( m_flAccuracyPenalty, 0.0f, PISTOL_ACCURACY_MAXIMUM_PENALTY_TIME );
+		
+		m_flAccuracyPenalty = m_flAccuracyPenalty <= 0.5 ? 0 : m_flAccuracyPenalty;
+		//DevMsg("Penalty time is: %f\n", m_flAccuracyPenalty );
 	}
 }
 
@@ -463,6 +479,16 @@ void CWeaponPistol::AddViewKick( void )
 	viewPunch.x = random->RandomFloat( -0.9f, -0.9f );
 	viewPunch.y = random->RandomFloat( -0.1f,  0.1f );
 	viewPunch.z = 0.0f;
+	
+/* 	//Find how far into our accuracy degradation we are
+	float limit = 10;
+	float scale = 3.5;
+	
+	float duration = MIN( m_flAccuracyPenalty, limit );
+	float kickPerc = duration / (limit / scale);
+	
+	viewPunch.x *= (1.0f + kickPerc);
+	viewPunch.y *= (1.0f + kickPerc); */
 	
 	if ( sk_alternate_recoil.GetBool() )
 	{

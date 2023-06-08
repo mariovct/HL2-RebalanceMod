@@ -130,7 +130,7 @@ enum bodygroups
 //-----------------------------------------------------------------------------
 
 #define STRIDER_DEFAULT_SHOOT_DURATION			2.5 // spend this much time stitching to each target.
-#define STRIDER_SHOOT_ON_TARGET_TIME			2.0 // How much of DEFAULT_SHOOT_DURATION is spent on-target (vs. stitching up to a target)
+#define STRIDER_SHOOT_ON_TARGET_TIME			1.75 // How much of DEFAULT_SHOOT_DURATION is spent on-target (vs. stitching up to a target)
 #define STRIDER_SHOOT_VARIATION					1.0 // up to 1 second of variance
 #define STRIDER_SHOOT_DOWNTIME					1.0 // This much downtime between bursts
 #define STRIDER_SUBSEQUENT_TARGET_DURATION		3 // Spend this much time stitching to targets chosen by distributed fire.
@@ -1141,7 +1141,10 @@ void CNPC_Strider::GatherConditions()
 				{
 					if( m_pMinigun->IsOnTarget( 3 ) && !FClassnameIs( GetEnemy(), "npc_bullseye" ) )
 					{
-						if( m_iVisibleEnemies > 1 && !HasCondition( COND_SEE_ENEMY ) )
+						AIEnemiesIter_t iter;
+						AI_EnemyInfo_t *pEMemory = GetEnemies()->GetFirst(&iter);
+						
+						if( m_iVisibleEnemies > 1 && gpGlobals->curtime >= pEMemory->timeLastSeen + STRIDER_DEFAULT_SHOOT_DURATION )
 						{
 							// Time to ignore this guy for a little while and switch targets.
 							GetEnemies()->SetTimeValidEnemy( GetEnemy(), gpGlobals->curtime + ( STRIDER_IGNORE_TARGET_DURATION * m_iVisibleEnemies ) );
@@ -4045,6 +4048,8 @@ bool CNPC_Strider::AimCannonAt( CBaseEntity *pEntity, float flInterval )
 
 	AI_TraceLine( vecShootPos, vecShootPos + vecShootDir * 8192, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
 	
+	CSoundEnt::InsertSound( SOUND_DANGER, tr.endpos, 512, 2.0f, this );
+	
 	m_vecHitPos = tr.endpos;
 	Vector localEnemyPosition;
 	VectorITransform( pEntity->GetAbsOrigin(), gunMatrix, localEnemyPosition );
@@ -4127,6 +4132,8 @@ void CNPC_Strider::FireCannon()
 	m_blastHit = tr.endpos;
 	m_blastHit += tr.plane.normal * 16;
 	m_blastNormal = tr.plane.normal;
+	
+	
 
 	// tell the client side effect to complete
 	EntityMessageBegin( this, true );

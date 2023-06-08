@@ -256,44 +256,22 @@ bool CGameRules::CanHavePlayerItem( CBasePlayer *pPlayer, CBaseCombatWeapon *pWe
 void CGameRules::RefreshSkillData ( bool forceUpdate )
 {
 #ifndef CLIENT_DLL
-	if ( UseLegacySkillBehavior.GetBool() )
+
+	GlobalEntity_Add( "skill.cfg", STRING(gpGlobals->mapname), GLOBAL_ON );
+	
+	if ( GetSkillLevel() == 3 )
 	{
-		if ( !forceUpdate )
-		{
-			if ( GlobalEntity_IsInTable( "skill.cfg" ) )
-			{
-				GlobalEntity_Add( "skill.cfg", STRING(gpGlobals->mapname), GLOBAL_ON );
-			}
-		}
+		GlobalEntity_Add( "skill_3.cfg", STRING(gpGlobals->mapname), GLOBAL_ON );
 	}
-	else
+		
+	if ( GetSkillLevel() == 2 )
 	{
-		if ( !forceUpdate && GetSkillLevel() == 3 && GlobalEntity_IsInTable( "skill_3.cfg" ) )
-		{
-			return;
-		}
-		else
-		{
-			GlobalEntity_Add( "skill_3.cfg", STRING(gpGlobals->mapname), GLOBAL_ON );
-		}
-		
-		if ( !forceUpdate && GetSkillLevel() == 2 && GlobalEntity_IsInTable( "skill_2.cfg" ) )
-		{
-			return;
-		}
-		else
-		{
-			GlobalEntity_Add( "skill_2.cfg", STRING(gpGlobals->mapname), GLOBAL_ON );
-		}
-		
-		if ( !forceUpdate && GetSkillLevel() == 1 && GlobalEntity_IsInTable( "skill_1.cfg" ) )
-		{
-			return;
-		}
-		else
-		{
-			GlobalEntity_Add( "skill_1.cfg", STRING(gpGlobals->mapname), GLOBAL_ON );
-		}
+		GlobalEntity_Add( "skill_2.cfg", STRING(gpGlobals->mapname), GLOBAL_ON );
+	}
+	
+	if ( GetSkillLevel() == 1 )
+	{
+		GlobalEntity_Add( "skill_1.cfg", STRING(gpGlobals->mapname), GLOBAL_ON );
 	}
 
 #if !defined( TF_DLL ) && !defined( DOD_DLL )
@@ -316,8 +294,14 @@ void CGameRules::RefreshSkillData ( bool forceUpdate )
 		// Execute the default skill.cfg no matter what.
 		Q_snprintf( szExec, sizeof(szExec), "exec skill.cfg\n" );
 		
+		engine->ServerCommand( szExec );
+		engine->ServerExecute();
+		
 		// Episodic file takes precedence
 		Q_snprintf( szExec, sizeof(szExec), "exec skill_episodic.cfg\n" );
+		
+		engine->ServerCommand( szExec );
+		engine->ServerExecute();
 	
 		
 		if ( GetSkillLevel() == 3 )

@@ -892,18 +892,11 @@ int CAI_BaseNPC::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	
 	if ( info.GetDamageType() & DMG_PHYSGUN && !IsRunningDynamicInteraction() && ( CapabilitiesGet() & bits_CAP_PUNTABLE ) )
 	{
-		//float m_flPuntforce = IsCurSchedule( SCHED_MELEE_ATTACK1 ) ? 150 : 200;
-		Vector	puntDir = ( info.GetDamageForce() * 200 );
-
-		if( info.GetDamage() >= GetHealth() )
-		{
-			// This blow will be fatal, so scale the damage force
-			// (it's a unit vector) so that the ragdoll will be 
-			// affected.
-			infoCopy.SetDamageForce( info.GetDamageForce() * 3000.0f );
-		}
+		Vector	puntDir = ( info.GetDamageForce() * 200.0f * m_flPuntScale );
+		DevMsg("Current punt scale is: %f\n", m_flPuntScale );
 		SetGroundEntity( NULL );
 		ApplyAbsVelocityImpulse( puntDir );
+		
 		SetCondition( COND_GOT_PUNTED );
 	}
 
@@ -9601,7 +9594,7 @@ Vector CAI_BaseNPC::GetActualShootPosition( const Vector &shootOrigin )
 #endif
 
 	// lead for some fraction of a second.
-	return (vecTargetPosition + ( GetEnemy()->GetSmoothedVelocity() * ( ShouldLeadShootTrajectory() ? ai_lead_time.GetFloat() : 1.0 ) ));
+	return (vecTargetPosition + ( GetEnemy()->GetSmoothedVelocity() * ai_lead_time.GetFloat() ));
 }
 
 //-----------------------------------------------------------------------------
@@ -10147,7 +10140,6 @@ void CAI_BaseNPC::SetTarget( CBaseEntity *pTarget )
 	m_hTargetEnt = pTarget;
 }
 
-
 //=========================================================
 // Choose Enemy - tries to find the best suitable enemy for the npc.
 //=========================================================
@@ -10591,6 +10583,7 @@ BEGIN_DATADESC( CAI_BaseNPC )
 	DEFINE_FIELD( m_NPCState,					FIELD_INTEGER ),
 	DEFINE_FIELD( m_IdealNPCState,				FIELD_INTEGER ),
 	DEFINE_FIELD( m_flLastStateChangeTime,		FIELD_TIME ),
+	DEFINE_FIELD( m_flPuntScale,				FIELD_FLOAT ),
 	DEFINE_FIELD( m_Efficiency,					FIELD_INTEGER ),
 	DEFINE_FIELD( m_MoveEfficiency,				FIELD_INTEGER ),
 	DEFINE_FIELD( m_flNextDecisionTime,			FIELD_TIME ),

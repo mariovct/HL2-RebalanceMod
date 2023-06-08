@@ -904,6 +904,7 @@ public:
 
 	NPC_STATE			m_NPCState;				// npc's current state
 	float				m_flLastStateChangeTime;
+	float				m_flPuntScale = 1;
 
 private:
 	NPC_STATE			m_IdealNPCState;		// npc should change to this state
@@ -1059,6 +1060,7 @@ public:
 	virtual bool		ShouldPickADeathPose( void ) { return true; }
 
 	virtual	bool		AllowedToIgnite( void ) { return false; }
+	void				SetPuntScale( float scale = 1.0f ) { m_flPuntScale = scale; }
 
 protected:
 	virtual float 		GetGoalRepathTolerance( CBaseEntity *pGoalEnt, GoalType_t type, const Vector &curGoal, const Vector &curTargetPos );

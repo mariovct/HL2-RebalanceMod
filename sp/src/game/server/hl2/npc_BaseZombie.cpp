@@ -677,7 +677,7 @@ float CNPC_BaseZombie::GetHitgroupDamageMultiplier( int iHitGroup, const CTakeDa
 			}
 			else
 			{
-				return 2.0f;
+				return 3.0f;
 			}
 		}
 	}

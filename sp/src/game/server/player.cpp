@@ -1004,7 +1004,7 @@ void CBasePlayer::DamageEffect(float flDamage, int fDamageType)
 	
 	else if ( fDamageType & DMG_BUCKSHOT ) //bookmark
 	{	
-	    this->ViewPunch( QAngle( random->RandomInt( -2, -3 ), random->RandomInt( 1, 1 ), 0 ) );
+	    this->ViewPunch( QAngle( -flDamage * 0.2, random->RandomInt( 1, 1 ), 0 ) );
 	    EmitSound( "Flesh.BulletImpact" );
 	
 	}
@@ -4015,7 +4015,7 @@ void CBasePlayer::CheckTimeBasedDamage()
 			{
 				// NOTE: this hack is actually used to RESTORE health //bookmark
 				// after the player has been poisoned.
-				if (m_nPoisonDmg > m_nPoisonRestored *2)
+				if (m_nPoisonDmg > m_nPoisonRestored)
 				{
 					int nDif = MIN(m_nPoisonDmg - m_nPoisonRestored, 5);
 					TakeHealth(nDif, DMG_GENERIC);

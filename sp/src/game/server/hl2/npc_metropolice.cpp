@@ -117,6 +117,7 @@ ConVar	sk_metropolice_stitch_along_hitcount( "sk_metropolice_stitch_along_hitcou
 
 ConVar	sk_metropolice_health( "sk_metropolice_health","0");
 ConVar	sk_metropolice_elite_health( "sk_metropolice_elite_health","0");
+ConVar	sk_metropolice_elite_simple_health( "sk_metropolice_elite_simple_health","0");
 ConVar	sk_metropolice_simple_health( "sk_metropolice_simple_health","0");
 ConVar	sk_metropolice_stitch_distance( "sk_metropolice_stitch_distance","1000");
 
@@ -215,6 +216,9 @@ BEGIN_DATADESC( CNPC_MetroPolice )
 	DEFINE_FIELD( m_flNextPainSoundTime, FIELD_TIME ),
 	DEFINE_FIELD( m_flNextLostSoundTime, FIELD_TIME ),
 	DEFINE_FIELD( m_nIdleChatterType, FIELD_INTEGER ),
+	
+	DEFINE_FIELD( m_flLeadScale, FIELD_FLOAT ),
+	DEFINE_FIELD( m_flLeadScaleUpdateTime, FIELD_TIME ),
 
 	DEFINE_FIELD( m_bSimpleCops, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bIsElite, FIELD_BOOLEAN ),
@@ -583,7 +587,20 @@ void CNPC_MetroPolice::PrescheduleThink( void )
 	{
 		ClearCondition( COND_GOT_PUNTED );
 		SetSchedule( SCHED_METROPOLICE_PUNT_STUN );
-	} 
+	}
+	
+	// Increase the current lead scale for every second our enemy isn't in view.
+	if ( m_flLeadScaleUpdateTime <= gpGlobals->curtime && GetEnemy() && HasCondition(COND_ENEMY_OCCLUDED) )
+	{
+		m_flLeadScale -= 12;
+		
+		m_flLeadScale = MAX( 0, m_flLeadScale );
+		m_flLeadScale = MIN( 100, m_flLeadScale );
+		
+	//	DevMsg("Current lead scale is: %f\n", m_flLeadScale );
+		
+		m_flLeadScaleUpdateTime	= gpGlobals->curtime + 1;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -709,7 +726,14 @@ void CNPC_MetroPolice::Spawn( void )
 	
 	if ( m_bIsElite )
 	{
-		m_iHealth = sk_metropolice_elite_health.GetFloat();
+		if (!m_bSimpleCops)
+		{
+			m_iHealth = sk_metropolice_elite_health.GetFloat();
+		}
+		else
+		{
+			m_iHealth = sk_metropolice_elite_simple_health.GetFloat();
+		}
 	}
 
 	m_flFieldOfView		= -0.2;// indicates the width of this NPC's forward view cone ( as a dotproduct result )
@@ -3424,7 +3448,7 @@ int CNPC_MetroPolice::SelectCombatSchedule()
 	// Announce a new enemy
 	if ( HasCondition( COND_NEW_ENEMY ) )
 	{
-		CapabilitiesAdd( bits_CAP_MOVE_JUMP );
+		//CapabilitiesAdd( bits_CAP_MOVE_JUMP );
 		AnnounceEnemyType( GetEnemy() );
 	}
 
@@ -4362,11 +4386,9 @@ int CNPC_MetroPolice::SelectFailSchedule( int failedSchedule, int failedTask, AI
 		if( CanDeployManhack() && OccupyStrategySlot( SQUAD_SLOT_POLICE_DEPLOY_MANHACK ) )
 			return SCHED_METROPOLICE_DEPLOY_MANHACK;
 	
-		if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) && ( 
-		TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || 
-		TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) ||
-		IsCurSchedule(SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE ) ||
-		IsCurSchedule(SCHED_METROPOLICE_FLANK_ENEMY ) ) )
+		if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) 
+		&& ( TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || 
+		TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) ) )
 		{
 			return SCHED_RANGE_ATTACK1;
 		}
@@ -4520,8 +4542,21 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 			} */
 		}
 		break;
-	}
+		
+	case SCHED_METROPOLICE_TAKECOVER_FAILED:
+		{
+			if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) 
+			&& ( TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) 
+			|| TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) ) )
+			{
+				return TranslateSchedule( SCHED_RANGE_ATTACK1 );
+			}
 
+			return TranslateSchedule( SCHED_TAKE_COVER_FROM_ENEMY ); 
+			break;
+		}
+		break;
+	}
 
 	return BaseClass::TranslateSchedule( scheduleType );
 }
@@ -4533,8 +4568,17 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 bool CNPC_MetroPolice::ShouldMoveAndShoot()
 {
 	
-/* 	if( IsCurSchedule( SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY, false ) )
-		return false; */
+ 	if( IsCurSchedule( SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY, false ) )
+	{
+		m_flStopMoveShootTime = gpGlobals->curtime + random->RandomFloat( 0.4f, 0.6f );
+		return false;
+	}
+	
+	if( IsCurSchedule( SCHED_METROPOLICE_HIDE_AND_RELOAD, false ) )
+	{
+		m_flStopMoveShootTime = gpGlobals->curtime + random->RandomFloat( 0.4f, 0.6f );
+		return false;
+	}
 	
 	if ( HasSpawnFlags( SF_METROPOLICE_ARREST_ENEMY ) )
 		return false;
@@ -4880,14 +4924,7 @@ void CNPC_MetroPolice::StartTask( const Task_t *pTask )
 		break;
 		
 	case TASK_RANGE_ATTACK1:
-		{
-			m_nShots = GetActiveWeapon()->GetRandomBurst();
-			m_flShotDelay = GetActiveWeapon()->GetFireRate();
-
-			m_flNextAttack = gpGlobals->curtime + m_flShotDelay;
-			ResetIdealActivity( ACT_RANGE_ATTACK1 );
-			m_flLastAttackTime = gpGlobals->curtime;
-		}
+		ResetIdealActivity( ACT_RANGE_ATTACK1 );
 		break; 
 
 	default:
@@ -5109,17 +5146,15 @@ void CNPC_MetroPolice::RunTask( const Task_t *pTask )
 			{
 				if ( IsActivityFinished() )
 				{
-					if (--m_nShots > 0)
+					if ( HasCondition( COND_ENEMY_OCCLUDED ) && !CanSupressEnemy() )
 					{
-						// DevMsg("ACT_RANGE_ATTACK1\n");
-						ResetIdealActivity( ACT_RANGE_ATTACK1 );
-						m_flLastAttackTime = gpGlobals->curtime;
-						m_flNextAttack = gpGlobals->curtime + m_flShotDelay;
+						TaskComplete();
 					}
 					else
 					{
-						// DevMsg("TASK_RANGE_ATTACK1 complete\n");
-						TaskComplete();
+						UpdateLeadScale( GetActiveWeapon() );
+						OnRangeAttack1();
+						ResetIdealActivity( ACT_RANGE_ATTACK1 );
 					}
 				}
 			}
@@ -5209,8 +5244,6 @@ bool CNPC_MetroPolice::CanDeployManhack( void )
 		pSquadmate = m_pSquad->GetNextMember( &iter );
 	}
 	
-//	DevMsg("\nNumber of Manhacks in squad is: %i", m_iManhacksInSquad );
-	
 	if ( m_iManhacksInSquad >= 1 )
 		return false;
 	
@@ -5226,12 +5259,6 @@ void CNPC_MetroPolice::BuildScheduleTestBits( void )
 	BaseClass::BuildScheduleTestBits();
 	
 	SetCustomInterruptCondition( COND_METROPOLICE_SWITCHED_WEAPON );
-	
-	if (gpGlobals->curtime < m_flNextAttack)
-	{
-		ClearCustomInterruptCondition( COND_CAN_RANGE_ATTACK1 );
-		ClearCustomInterruptCondition( COND_CAN_RANGE_ATTACK2 );
-	}
 	
 	if ( IsCurSchedule( SCHED_METROPOLICE_PUNT_STUN ) )
 	{
@@ -5687,6 +5714,102 @@ bool CNPC_MetroPolice::CanBecomeElite( void )
 	}
 	
 	return false;
+}
+//-----------------------------------------------------------------------------
+// Purpose: Gives players the ablility to juke bullets for a small amount of time.
+//			Degrades dynamically based on the current weapon held.
+//-----------------------------------------------------------------------------
+void CNPC_MetroPolice::UpdateLeadScale( CBaseCombatWeapon *pWeapon )
+{
+	if ( HasCondition( COND_SEE_ENEMY ) )
+	{
+		if( FClassnameIs( pWeapon, "weapon_smg1" ) )
+		{
+			// Stops leading in 5 shots.
+			m_flLeadScale += 20;
+		}
+		if( FClassnameIs( pWeapon, "weapon_shotgun" ) )
+		{
+			// Stops leading in 1 shot.
+			m_flLeadScale += 100;
+		}
+		if( FClassnameIs( pWeapon, "weapon_pistol" ) )
+		{
+			// Stops leading in 4 shots.
+			m_flLeadScale += 25;
+		}
+	}
+	m_flLeadScale = MAX( 0, m_flLeadScale );
+	m_flLeadScale = MIN( 100, m_flLeadScale );
+	
+	//DevMsg("Current lead scale is: %f\n", m_flLeadScale );
+	
+}
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool CNPC_MetroPolice::CanSupressEnemy( void )
+{
+	if ( !GetEnemy() )
+		return false;
+
+	// Determine what point we're shooting at
+	Vector vecTarget = GetEnemies()->LastSeenPosition( GetEnemy() ) + (GetEnemy()->GetViewOffset()*0.75);// approximates the chest
+
+	trace_t tr;
+	trace_t traceGlass;
+
+	Vector vShootPosition = EyePosition();
+
+	if ( GetActiveWeapon() )
+	{
+		GetActiveWeapon()->GetAttachment( "muzzle", vShootPosition );
+	}
+
+	UTIL_TraceLine( vShootPosition, vecTarget, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
+	
+	// Check for glass, we'll know if the above trace is true and this one is not.
+	UTIL_TraceLine( vShootPosition, vecTarget, MASK_SOLID, this, COLLISION_GROUP_NONE, &traceGlass );
+
+	float flLength = (vShootPosition - vecTarget).Length();
+
+	flLength *= tr.fraction;
+
+	//If the bullets can travel at least 40% of the distance to the player then let the NPC shoot it.
+	if( tr.fraction >= 0.4 && flLength > 128.0f )
+	{
+		// Don't suppress through glass!
+		if ( traceGlass.DidHitWorld() )
+		{
+			return false;
+		}
+		// Target is valid
+		return true;
+	}
+	
+	return false;
+}
+//-----------------------------------------------------------------------------
+// Purpose: Return the actual position the NPC wants to fire at when it's trying
+//			to hit it's current enemy.
+//-----------------------------------------------------------------------------
+Vector CNPC_MetroPolice::GetActualShootPosition( const Vector &shootOrigin )
+{
+	if ( m_nBurstMode != BURST_NOT_ACTIVE )
+		return BaseClass::GetActualShootPosition( shootOrigin );
+	
+	Vector vecEnemyLKP = GetEnemyLKP();
+	Vector vecEnemyOffset = GetEnemy()->BodyTarget( shootOrigin ) - GetEnemy()->GetAbsOrigin();
+	Vector vecTargetPosition = vecEnemyOffset + vecEnemyLKP;
+	
+	if( GetEnemy()->Classify() == CLASS_ZOMBIE )
+	{
+		vecTargetPosition = GetEnemy()->HeadTarget( shootOrigin );
+	}
+	
+	// lead for some fraction of a second.
+	float scale = 0.25 - ( 0.25 * m_flLeadScale / 100 );
+	return vecTargetPosition + ( GetEnemy()->GetSmoothedVelocity() * -scale );
 }
 //-----------------------------------------------------------------------------
 //
@@ -6459,6 +6582,14 @@ DEFINE_SCHEDULE
 	"		COND_NEW_ENEMY"
 	"		COND_HEAR_DANGER"
 )
+ DEFINE_SCHEDULE
+ (
+ SCHED_METROPOLICE_TAKECOVER_FAILED,
+
+ "	Tasks"
+ ""
+ "	Interrupts"
+ )
 //=========================================================
 //=========================================================
 DEFINE_SCHEDULE
@@ -6466,7 +6597,7 @@ DEFINE_SCHEDULE
 	SCHED_METROPOLICE_HIDE_AND_RELOAD,
 
 	"	Tasks"
-	"		TASK_SET_FAIL_SCHEDULE		SCHEDULE:SCHED_METROPOLICE_HIDE_AND_RELOAD"
+	"		TASK_SET_FAIL_SCHEDULE		SCHEDULE:SCHED_RELOAD"
 	"		TASK_FIND_COVER_FROM_ENEMY	0"
 	"		TASK_RUN_PATH				0"
 	"		TASK_WAIT_FOR_MOVEMENT		0"
@@ -6478,7 +6609,7 @@ DEFINE_SCHEDULE
 	"	Interrupts"
 	"		COND_CAN_MELEE_ATTACK1"
 	"		COND_CAN_MELEE_ATTACK2"
-	"		COND_HEAVY_DAMAGE"
+	//"		COND_HEAVY_DAMAGE"
 	"		COND_HEAR_DANGER"
 	"		COND_HEAR_MOVE_AWAY"
 )

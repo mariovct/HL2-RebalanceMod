@@ -88,7 +88,7 @@ ConVar sk_hunter_dmg_charge( "sk_hunter_dmg_charge", "20" );
 ConVar hunter_flechette_max_range( "hunter_flechette_max_range", "1200" );
 ConVar hunter_flechette_min_range( "hunter_flechette_min_range", "100" );
 ConVar hunter_flechette_volley_size( "hunter_flechette_volley_size", "8" );
-ConVar hunter_flechette_speed( "hunter_flechette_speed", "2000" );
+ConVar hunter_flechette_speed( "hunter_flechette_speed", "4000" );
 ConVar sk_hunter_dmg_flechette( "sk_hunter_dmg_flechette", "4.0" );
 ConVar sk_hunter_flechette_explode_dmg( "sk_hunter_flechette_explode_dmg", "12.0" );
 ConVar sk_hunter_flechette_explode_radius( "sk_hunter_flechette_explode_radius", "128.0" );
@@ -1749,7 +1749,7 @@ void CNPC_Hunter::Spawn()
 	SetDefaultEyeOffset();
 	
 	SetNavType( NAV_GROUND );
-	m_flGroundSpeed	= 500;
+	m_flGroundSpeed	= 750;
 	m_NPCState = NPC_STATE_NONE;
 
 	SetBloodColor( DONT_BLEED );

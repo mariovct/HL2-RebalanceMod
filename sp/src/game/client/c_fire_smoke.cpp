@@ -392,7 +392,7 @@ void C_EntityFlame::Simulate( void )
 		dl->style = 6;
 	if ( IsEffectActive(EF_BRIGHTLIGHT) || IsEffectActive(EF_DIMLIGHT) )
 	{
-		dl->radius = random->RandomFloat(400, 430);
+		dl->radius = random->RandomFloat(600, 830);
 		dl->decay = dl->radius / 0.1;
 	}
 	else

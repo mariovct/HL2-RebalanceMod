@@ -930,7 +930,7 @@ CAPCMissile *FindAPCMissileInCone( const Vector &vecOrigin, const Vector &vecDir
 #define MIN_HEIGHT_DIFFERENCE	250.0f
 #define MAX_HEIGHT_DIFFERENCE	550.0f
 #define CORRECTION_TIME		0.2f
-#define	APC_LAUNCH_HOMING_SPEED	0.1f
+#define	APC_LAUNCH_HOMING_SPEED	0.05f
 #define	APC_HOMING_SPEED	0.025f
 #define HOMING_SPEED_ACCEL	0.01f
 

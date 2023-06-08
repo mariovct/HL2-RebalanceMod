@@ -335,10 +335,14 @@ void CGrenadeFrag::DelayThink()
 
 	if( !m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime )
 	{
-#if !defined( CLIENT_DLL )
-		CSoundEnt::InsertSound ( SOUND_DANGER, GetAbsOrigin(), 400, 1.5, this );
-#endif
 		m_bHasWarnedAI = true;
+	}
+	
+	if ( !m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime - 1 )
+	{
+#if !defined( CLIENT_DLL )
+		CSoundEnt::InsertSound ( SOUND_DANGER, GetAbsOrigin(), sk_fraggrenade_radius.GetInt(), 1.5, this );
+#endif
 	}
 	
 	if( gpGlobals->curtime > m_flNextBlipTime )

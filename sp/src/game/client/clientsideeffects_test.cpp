@@ -22,6 +22,8 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+ConVar dynamic_player_tracers( "dynamic_player_tracers", "0" );
+
 //FIXME: All these functions will be moved out to FX_Main.CPP or a individual folder
 
 CLIENTEFFECT_REGISTER_BEGIN( PrecacheEffectsTest )
@@ -141,30 +143,46 @@ FX_PlayerTracer
 
 void FX_PlayerTracer( Vector& start, Vector& end )
 {
-	VPROF_BUDGET( "FX_PlayerTracer", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
-	Vector	shotDir, dStart, dEnd;
-	float	length;
+	if ( !dynamic_player_tracers.GetBool() )
+	{
+		VPROF_BUDGET( "FX_PlayerTracer", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
+		Vector	shotDir, dStart, dEnd;
+		float	length;
 
-	//Find the direction of the tracer
-	VectorSubtract( end, start, shotDir );
-	length = VectorNormalize( shotDir );
+		//Find the direction of the tracer
+		VectorSubtract( end, start, shotDir );
+		length = VectorNormalize( shotDir );
 
-	//Randomly place the tracer along this line, with a random length
-	VectorMA( start, TRACER_BASE_OFFSET + random->RandomFloat( -24.0f, 64.0f ), shotDir, dStart );
-	VectorMA( dStart, ( length * random->RandomFloat( 0.1f, 0.6f ) ), shotDir, dEnd );
+		//Randomly place the tracer along this line, with a random length
+		VectorMA( start, TRACER_BASE_OFFSET + random->RandomFloat( -24.0f, 64.0f ), shotDir, dStart );
+		VectorMA( dStart, ( length * random->RandomFloat( 0.1f, 0.6f ) ), shotDir, dEnd );
 
-	//Create the line
-	CFXStaticLine	*t;
-	const char		*materialName;
+		//Create the line
+		CFXStaticLine	*t;
+		const char		*materialName;
 
-	//materialName = ( random->RandomInt( 0, 1 ) ) ? "effects/tracer_middle" : "effects/tracer_middle2";
-	materialName = "effects/spark";
+		//materialName = ( random->RandomInt( 0, 1 ) ) ? "effects/tracer_middle" : "effects/tracer_middle2";
+		materialName = "effects/spark";
 
-	t = new CFXStaticLine( "Tracer", dStart, dEnd, random->RandomFloat( 0.5f, 0.75f ), 0.01f, materialName, 0 );
-	assert( t );
+		t = new CFXStaticLine( "Tracer", dStart, dEnd, random->RandomFloat( 0.5f, 0.75f ), 0.01f, materialName, 0 );
+		assert( t );
 
-	//Throw it into the list
-	clienteffects->AddEffect( t );
+		//Throw it into the list
+		clienteffects->AddEffect( t );
+	}
+	else
+	{
+		float dist;
+		Vector dir;
+
+		VectorSubtract( end, start, dir );
+		dist = VectorNormalize( dir );
+		float length = random->RandomFloat( 64.0f, 128.0f );
+		float life = ( dist + length ) / 10000;	//NOTENOTE: We want the tail to finish its run as well
+			
+		//Add it
+		FX_AddDiscreetLine( start, dir, 10000, length, dist, random->RandomFloat( 0.75f, 0.9f ), life, "effects/spark" );
+	}
 }
 
 /*

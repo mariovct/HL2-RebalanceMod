@@ -1608,7 +1608,7 @@ void CPropAirboat::FireGun( )//bookmark
 	FireBulletsInfo_t info;
 	info.m_vecSrc = vecGunPosition;
 	info.m_vecDirShooting = vecRay;
-	info.m_flDistance = 4096;
+	info.m_flDistance = MAX_COORD_RANGE;
 	info.m_iAmmoType = ammoType;
 	info.m_nFlags = FIRE_BULLETS_TEMPORARY_DANGER_SOUND;
 

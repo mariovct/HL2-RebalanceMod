@@ -2156,14 +2156,14 @@ void UpdateRichPresence ( void )
 		iChapterIndex	= g_nCurrentChapterIndex - 1;
 		iGamePresenceID = CONTEXT_PRESENCE_HL2_INGAME;
 	}
-	else if ( Q_stristr( modDir, "episodic" ) )
+	else if ( Q_stristr( modDir, "episodic" ) || Q_stristr( modDir, "hl2_rebalance_ep1" ) )
 	{
 		iGameID			= CONTEXT_GAME_GAME_EPISODE_ONE;
 		iChapterID		= CONTEXT_CHAPTER_EP1;
 		iChapterIndex	= g_nCurrentChapterIndex - 1;
 		iGamePresenceID = CONTEXT_PRESENCE_EP1_INGAME;
 	}
-	else if ( Q_stristr( modDir, "ep2" ) )
+	else if ( Q_stristr( modDir, "ep2" ) || Q_stristr( modDir, "hl2_rebalance_ep2" ) )
 	{
 		iGameID			= CONTEXT_GAME_GAME_EPISODE_TWO;
 		iChapterID		= CONTEXT_CHAPTER_EP2;

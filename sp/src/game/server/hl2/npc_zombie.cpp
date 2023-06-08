@@ -202,8 +202,8 @@ enum
 	SCHED_ZOMBIE_BASH_DOOR = LAST_BASE_ZOMBIE_SCHEDULE,
 	SCHED_ZOMBIE_WANDER_ANGRILY,
 	SCHED_ZOMBIE_CHARGE_ENEMY,
-	SCHED_ZOMBIE_FAIL,
 	SCHED_ZOMBIE_PUNT_STUN,
+	SCHED_ZOMBIE_FAIL
 };
 
 //=========================================================
@@ -322,7 +322,9 @@ void CZombie::PrescheduleThink( void )
   	}
 	if ( HasCondition( COND_GOT_PUNTED ) )
 	{
-		if ( !IsCurSchedule( SCHED_MELEE_ATTACK1 ) && !IsCurSchedule( SCHED_ZOMBIE_PUNT_STUN ) )
+		if ( !IsCurSchedule( SCHED_MELEE_ATTACK1 ) 
+		&& !IsCurSchedule( SCHED_ZOMBIE_PUNT_STUN ) 
+		&& !IsCurSchedule( SCHED_ZOMBIE_RELEASECRAB ))
 		{
 			SetSchedule( SCHED_ZOMBIE_PUNT_STUN );
 		}
@@ -926,7 +928,7 @@ void CZombie::BuildScheduleTestBits( void )
 //---------------------------------------------------------
 HeadcrabRelease_t CZombie::ShouldReleaseHeadcrab( const CTakeDamageInfo &info, float flDamageThreshold )
 {
-	if ( m_iHealth > 1 )
+	if ( m_iHealth > 1 && !m_fIsTorso )
 	{
 		bool m_bHealthRatio = m_iHealth <= sk_zombie_headcrab_evac_health.GetFloat();
 		

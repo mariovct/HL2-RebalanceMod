@@ -48,6 +48,7 @@ public:
 	Activity NPC_TranslateActivity( Activity newActivity );
 
 	Vector		EyeDirection3D( void )	{ return CAI_BaseHumanoid::EyeDirection3D(); } // cops don't have eyes
+	Vector 		GetActualShootPosition( const Vector &shootOrigin );
 
 	virtual void Event_Killed( const CTakeDamageInfo &info );
 
@@ -305,6 +306,9 @@ private:
 	
 	// Can we become an Elite?
 	bool CanBecomeElite( void );
+	
+	void UpdateLeadScale( CBaseCombatWeapon *pWeapon );
+	bool CanSupressEnemy( void );
 
 private:
 	enum
@@ -383,6 +387,7 @@ private:
 		SCHED_METROPOLICE_HIDE_AND_RELOAD,
 		SCHED_ENTER_OVERWATCH,
 		SCHED_OVERWATCH,
+		SCHED_METROPOLICE_TAKECOVER_FAILED,
 	};
 
 	enum 
@@ -416,6 +421,8 @@ private:
 
 	float			m_flBatonChaseTime;
 	float			m_flBatonChaseCooldown;
+	float			m_flLeadScale;
+	float			m_flLeadScaleUpdateTime;
 	int				m_iPistolClips;		// How many clips the cop has in reserve
 	int				m_iManhacks;		// How many manhacks the cop has
 	int				m_iOldClip1;

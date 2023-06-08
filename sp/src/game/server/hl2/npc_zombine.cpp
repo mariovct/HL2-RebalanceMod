@@ -154,6 +154,7 @@ public:
 	enum
 	{
 		SCHED_ZOMBINE_PULL_GRENADE = LAST_BASE_ZOMBIE_SCHEDULE,
+		SCHED_ZOMBIE_PUNT_STUN,
 	};
 
 public:
@@ -217,6 +218,7 @@ void CNPC_Zombine::Spawn( void )
 	CapabilitiesClear();
 
 	BaseClass::Spawn();
+	SetPuntScale(0.5);
 
 	m_flSprintTime = 0.0f;
 	m_flSprintRestTime = 0.0f;
@@ -293,6 +295,16 @@ void CNPC_Zombine::PrescheduleThink( void )
 			{
 				StopSprint();
 			}
+		}
+	}
+	
+	if ( HasCondition( COND_GOT_PUNTED ) && ( !IsSprinting() || RandomInt(0, 5) == 5 ) )
+	{
+		if ( !IsCurSchedule( SCHED_MELEE_ATTACK1 ) 
+		&& !IsCurSchedule( SCHED_ZOMBIE_PUNT_STUN ) 
+		&& !IsCurSchedule( SCHED_ZOMBINE_PULL_GRENADE ) )
+		{
+			SetSchedule( SCHED_ZOMBIE_PUNT_STUN );
 		}
 	}
 
@@ -1024,6 +1036,15 @@ AI_BEGIN_CUSTOM_NPC( npc_zombine, CNPC_Zombine )
 
 	"	Interrupts"
 
+	)
+	DEFINE_SCHEDULE
+	(
+		SCHED_ZOMBIE_PUNT_STUN,
+
+		"	Tasks"
+		"		TASK_STOP_MOVING		0"
+		"		TASK_PLAY_SEQUENCE		ACTIVITY:ACT_FLINCH_PHYSICS"
+		"		TASK_WAIT				0.2"
 	)
 
 AI_END_CUSTOM_NPC()

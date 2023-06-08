@@ -46,6 +46,7 @@ public:
 	bool			CheckCanThrowGrenade( const Vector &vecTarget );
 	virtual	bool	CanGrenadeEnemy( bool bUseFreeKnowledge = true );
 	virtual bool	CanAltFireEnemy( bool bUseFreeKnowledge );
+	bool			CanSupressEnemy( void );
 	int				GetGrenadeConditions( float flDot, float flDist );
 	int				RangeAttack2Conditions( float flDot, float flDist ); // For innate grenade attack
 	int				MeleeAttack1Conditions( float flDot, float flDist ); // For kick/punch
@@ -91,6 +92,7 @@ public:
 	Vector			EyePosition( void );
 	Vector			BodyTarget( const Vector &posSrc, bool bNoisy = true );
 	Vector			GetAltFireTarget();
+	Vector 			GetActualShootPosition( const Vector &shootOrigin );
 
 	void			StartTask( const Task_t *pTask );
 	void			RunTask( const Task_t *pTask );
@@ -137,6 +139,7 @@ public:
 	void			AnnounceEnemyKill( CBaseEntity *pEnemy );
 
 	void			NotifyDeadFriend( CBaseEntity* pFriend );
+	void 			UpdateLeadScale( CBaseCombatWeapon *pWeapon );
 
 	virtual float	HearingSensitivity( void ) { return 1.0; };
 	int				GetSoundInterests( void );
@@ -228,6 +231,7 @@ private:
 		COND_COMBINE_DROP_GRENADE,
 		COND_COMBINE_ON_FIRE,
 		COND_COMBINE_ATTACK_SLOT_AVAILABLE,
+		COND_COMBINE_TAKECOVER,
 		COND_TAKECOVER_FAILED,
 		NEXT_CONDITION
 	};
@@ -269,6 +273,7 @@ private:
 	bool			m_bShouldPatrol;
 	bool			m_bFirstEncounter;// only put on the handsign show in the squad's first encounter.
 	bool			m_bUseAttackSlots;
+	bool			m_bEnemyGrenade;
 
 	// Time Variables
 	float			m_flNextPainSoundTime;
@@ -285,6 +290,8 @@ private:
 	int				m_nShots;
 	float			m_flShotDelay;
 	float			m_flStopMoveShootTime;
+	float			m_flLeadScale;
+	float			m_flLeadScaleUpdateTime;
 
 	CAI_Sentence< CNPC_Combine > m_Sentences;
 

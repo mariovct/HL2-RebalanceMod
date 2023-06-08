@@ -300,6 +300,7 @@ void CNPC_PoisonZombie::Spawn( void )
 	CapabilitiesAdd( bits_CAP_MOVE_GROUND | bits_CAP_INNATE_MELEE_ATTACK1 | bits_CAP_INNATE_RANGE_ATTACK1 | bits_CAP_INNATE_RANGE_ATTACK2 );
 
 	BaseClass::Spawn();
+	CapabilitiesRemove( bits_CAP_PUNTABLE );
 
 	CPASAttenuationFilter filter( this, ATTN_IDLE );
 	m_pFastBreathSound = ENVELOPE_CONTROLLER.SoundCreate( filter, entindex(), CHAN_ITEM, "NPC_PoisonZombie.FastBreath", ATTN_IDLE );
