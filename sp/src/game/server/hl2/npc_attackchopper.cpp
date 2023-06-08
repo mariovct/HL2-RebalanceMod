@@ -2860,7 +2860,7 @@ void CNPC_AttackHelicopter::InputDropBomb( inputdata_t &inputdata )
 	// If we're in the middle of a bomb dropping schedule, wait to drop another bomb.
 	if ( ShouldDropBombs() )
 	{
-		m_flNextAttack = gpGlobals->curtime + sk_helicopter_bomb_drop_rate.GetInt();
+		m_flNextAttack = gpGlobals->curtime + sk_helicopter_bomb_drop_rate.GetFloat();
 	}
 }
 
@@ -2885,7 +2885,7 @@ void CNPC_AttackHelicopter::InputDropBombStraightDown( inputdata_t &inputdata )
 	// If we're in the middle of a bomb dropping schedule, wait to drop another bomb.
 	if ( ShouldDropBombs() )
 	{
-		m_flNextAttack = gpGlobals->curtime + sk_helicopter_bomb_drop_rate.GetInt();
+		m_flNextAttack = gpGlobals->curtime + sk_helicopter_bomb_drop_rate.GetFloat();
 	}
 }
 
@@ -2941,7 +2941,7 @@ void CNPC_AttackHelicopter::InputDropBombAtTargetInternal( inputdata_t &inputdat
 	// If we're in the middle of a bomb dropping schedule, wait to drop another bomb.
 	if ( ShouldDropBombs() )
 	{
-		m_flNextAttack = gpGlobals->curtime + sk_helicopter_bomb_drop_interval.GetInt() + random->RandomFloat( 0.1f, 0.2f );
+		m_flNextAttack = gpGlobals->curtime + sk_helicopter_bomb_drop_interval.GetFloat() + random->RandomFloat( 0.1f, 0.2f );
 	}
 }
 
@@ -3019,7 +3019,7 @@ void CNPC_AttackHelicopter::DropBombs( )
 
 	CreateBomb( );
 
-	m_flNextAttack = gpGlobals->curtime + sk_helicopter_bomb_drop_rate.GetInt();
+	m_flNextAttack = gpGlobals->curtime + sk_helicopter_bomb_drop_rate.GetFloat();
 
 	if ( (m_nAttackMode != ATTACK_MODE_BULLRUSH_VEHICLE) )
 	{
@@ -3127,7 +3127,7 @@ void CNPC_AttackHelicopter::BullrushBombs( )
 	}
 
 	m_nBullrushBombMode = !m_nBullrushBombMode;
-	m_flNextBullrushBombTime = gpGlobals->curtime + sk_helicopter_mega_bomb_drop_rate.GetInt();
+	m_flNextBullrushBombTime = gpGlobals->curtime + sk_helicopter_mega_bomb_drop_rate.GetFloat();
 }
 
 
