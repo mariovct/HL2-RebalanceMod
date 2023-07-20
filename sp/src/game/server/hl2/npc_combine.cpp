@@ -499,11 +499,6 @@ void CNPC_Combine::PrescheduleThink()
 		ClearCondition( COND_COMBINE_ON_FIRE );
 	}
 	
-	if ( ( m_nRecentDamage / GetMaxHealth() ) > ( RECENT_DAMAGE_THRESHOLD / 100 ) )
-	{
-		SetCondition( COND_HEAVY_DAMAGE );
-	}
-	
 	extern ConVar ai_debug_shoot_positions;
 	if ( ai_debug_shoot_positions.GetBool() )
 		NDebugOverlay::Cross3D( EyePosition(), 16, 0, 255, 0, false, 0.1 );
@@ -1290,7 +1285,7 @@ void CNPC_Combine::RunTask( const Task_t *pTask )
 			{
 				if ( IsActivityFinished() )
 				{
-					if ( HasCondition( COND_ENEMY_OCCLUDED ) && !CanSupressEnemy() )
+					if ( HasCondition( COND_ENEMY_OCCLUDED ) && !CanSuppressEnemy() )
 					{
 						TaskComplete();
 					}
@@ -1451,7 +1446,7 @@ void CNPC_Combine::BuildScheduleTestBits( void )
 		ClearCondition( COND_COMBINE_HIT_BY_BUGBAIT );
 	}
 
-	if ( m_bCanRun )
+	if ( !HasCondition( COND_COMBINE_ON_FIRE ) )
 	{
 		SetCustomInterruptCondition( COND_COMBINE_ON_FIRE );
 	}
@@ -1464,6 +1459,15 @@ void CNPC_Combine::BuildScheduleTestBits( void )
 	{
 		ClearCustomInterruptCondition( COND_LIGHT_DAMAGE );
 		ClearCustomInterruptCondition( COND_HEAVY_DAMAGE );
+	}
+	
+	if ( !IsCurSchedule( SCHED_BIG_FLINCH) )
+	{
+		SetCustomInterruptCondition( COND_GOT_PUNTED );
+	}
+	else
+	{
+		ClearCondition( COND_GOT_PUNTED );
 	}
 	
 	if ( IsRunningApproachEnemySchedule() && GetEnemy() != NULL )//bookmark
@@ -1760,9 +1764,9 @@ int CNPC_Combine::SelectCombatSchedule()
 	// ----------------------
 	// LIGHT DAMAGE
 	// ----------------------
-	if ( HasCondition( COND_HEAVY_DAMAGE ) )
+	if ( ( m_nRecentDamage / GetMaxHealth() ) > ( RECENT_DAMAGE_THRESHOLD / 100 ) )
 	{
-		if ( GetEnemy() != NULL )
+		if ( GetEnemy() != NULL && !HasCondition( COND_COMBINE_ON_FIRE ) )
 		{
 			// only try to take cover if we actually have an enemy!
 
@@ -1877,10 +1881,19 @@ int CNPC_Combine::SelectSchedule( void )
 		return BaseClass::SelectSchedule();
 	}
 
-	if ( HasCondition( COND_COMBINE_ON_FIRE ) && m_bCanRun )
+	if ( HasCondition( COND_COMBINE_ON_FIRE ) )
 	{
-		m_bCanRun = false;
-		return SCHED_TAKE_COVER_FROM_ORIGIN;
+		if ( GetEnemy() && !HasCondition( COND_LOW_PRIMARY_AMMO ) )
+		{
+			m_bUseAttackSlots = false;
+			
+			if ( !IsUnreachable( GetEnemy() ) )
+				return SCHED_COMBINE_CHARGE_PLAYER;
+			
+			return SCHED_ESTABLISH_LINE_OF_FIRE;
+		}
+			
+		return SCHED_COMBINE_BURNING_STAND;
 	}
 
 	int nSched = SelectFlinchSchedule();
@@ -1951,7 +1964,7 @@ int CNPC_Combine::SelectSchedule( void )
 		// We've been told to move away from a target to make room for a grenade to be thrown at it
 		if ( HasCondition( COND_HEAR_MOVE_AWAY ) )
 		{
-			return SCHED_MOVE_AWAY;
+			return SCHED_TAKE_COVER_FROM_BEST_SOUND;
 		}
 
 		// These things are done in any state but dead and prone
@@ -2112,11 +2125,6 @@ int CNPC_Combine::SelectFailSchedule( int failedSchedule, int failedTask, AI_Tas
 		}
 		
 		return SCHED_FAIL;
-	}
-	
-	if( failedSchedule == SCHED_TAKE_COVER_FROM_ORIGIN && HasCondition( COND_COMBINE_ON_FIRE ) )
-	{
-		return SCHED_COMBINE_BURNING_STAND;
 	}
 	
 	return BaseClass::SelectFailSchedule( failedSchedule, failedTask, taskFailCode );
@@ -2385,8 +2393,8 @@ int CNPC_Combine::TranslateSchedule( int scheduleType )
 			}
 
 			// No running away in the citadel!
-//			if ( ShouldChargePlayer() )
-//				return SCHED_RELOAD;
+			if ( ShouldChargePlayer() )
+				return SCHED_RELOAD;
 
 			return SCHED_COMBINE_HIDE_AND_RELOAD;
 		}
@@ -3013,7 +3021,9 @@ bool CNPC_Combine::CanThrowGrenade( const Vector &vecTarget )
 			m_flNextGrenadeCheck = gpGlobals->curtime + 1; // one full second.
 
 			// Tell my squad members to clear out so I can get a grenade in
-			CSoundEnt::InsertSound( SOUND_MOVE_AWAY | SOUND_CONTEXT_COMBINE_ONLY, vecTarget, COMBINE_MIN_GRENADE_CLEAR_DIST, 0.1 );
+			
+			// Don't displace soldiers from firing positions or cover just for the possibility of throwing a nade!
+			//CSoundEnt::InsertSound( SOUND_MOVE_AWAY | SOUND_CONTEXT_COMBINE_ONLY, vecTarget, COMBINE_MIN_GRENADE_CLEAR_DIST, 0.1 );
 			return false;
 		}
 	}
@@ -3153,7 +3163,7 @@ bool CNPC_Combine::CanAltFireEnemy( bool bUseFreeKnowledge )
 }
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-bool CNPC_Combine::CanSupressEnemy( void )
+bool CNPC_Combine::CanSuppressEnemy( void )
 {
 	if ( !GetEnemy() )
 		return false;
@@ -3624,7 +3634,7 @@ Vector CNPC_Combine::GetActualShootPosition( const Vector &shootOrigin )
 		return vecTargetPosition;
 	}
 	
-	if ( GetEnemy()->IsPlayer() )
+	/* if ( GetEnemy()->IsPlayer() )
 	{
 		Vector vecEnemyLKP = GetEnemyLKP();
 		Vector vecEnemyOffset = GetEnemy()->BodyTarget( shootOrigin ) - GetEnemy()->GetAbsOrigin();
@@ -3633,7 +3643,7 @@ Vector CNPC_Combine::GetActualShootPosition( const Vector &shootOrigin )
 		// lead for some fraction of a second.
 		float scale = 0.25 - ( 0.25 * m_flLeadScale / 100 );
 		return vecTargetPosition + ( GetEnemy()->GetSmoothedVelocity() * -scale );
-	}
+	} */
 	
 	return BaseClass::GetActualShootPosition( shootOrigin );
 }
@@ -4429,9 +4439,8 @@ DEFINE_SCHEDULE
 
  "	Tasks"
  "		TASK_SET_ACTIVITY				ACTIVITY:ACT_COMBINE_BUGBAIT"
- "		TASK_RANDOMIZE_FRAMERATE		20"
- "		TASK_WAIT						2"
- "		TASK_WAIT_RANDOM				3"
+ //"		TASK_RANDOMIZE_FRAMERATE		20"
+ "		TASK_WAIT						3"
  "		TASK_COMBINE_DIE_INSTANTLY		DMG_BURN"
  "		TASK_WAIT						1.0"
  "	"

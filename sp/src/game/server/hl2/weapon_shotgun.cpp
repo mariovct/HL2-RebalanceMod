@@ -446,8 +446,8 @@ void CWeaponShotgun::Pump( void )
 	// Finish reload animation
 	SendWeaponAnim( ACT_SHOTGUN_PUMP );
 
-	pOwner->m_flNextAttack	= gpGlobals->curtime + SequenceDuration() - 0.050;
-	m_flNextPrimaryAttack	= gpGlobals->curtime + SequenceDuration() - 0.050;
+	pOwner->m_flNextAttack	= gpGlobals->curtime + SequenceDuration();
+	m_flNextPrimaryAttack	= gpGlobals->curtime + SequenceDuration();
 }
 
 //-----------------------------------------------------------------------------

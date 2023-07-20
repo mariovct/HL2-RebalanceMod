@@ -192,6 +192,7 @@ ConVar	sk_headcrab_fast_health( "sk_headcrab_fast_health","0");
 ConVar	sk_headcrab_poison_health( "sk_headcrab_poison_health","0");
 ConVar	sk_headcrab_fast_melee_dmg( "sk_headcrab_fast_melee_dmg","0");
 ConVar	sk_headcrab_melee_dmg( "sk_headcrab_melee_dmg","0");
+ConVar	sk_headcrab_poison_dmg( "sk_headcrab_poison_dmg", "0" );
 ConVar	sk_headcrab_poison_npc_damage( "sk_headcrab_poison_npc_damage", "0" );
 
 BEGIN_DATADESC( CBaseHeadcrab )
@@ -3285,7 +3286,7 @@ void CBlackHeadcrab::TouchDamage( CBaseEntity *pOther )
 	{
 		CTakeDamageInfo info;
 		if ( CalcDamageInfo( &info ) >= pOther->m_iHealth )
-			info.SetDamage( pOther->m_iHealth - 1 );
+			info.SetDamage( MIN( sk_headcrab_poison_dmg.GetInt(), pOther->m_iHealth - 1 ) );
 
 		pOther->TakeDamage( info  );
 
@@ -3297,7 +3298,7 @@ void CBlackHeadcrab::TouchDamage( CBaseEntity *pOther )
 				if ( pOther->IsPlayer() )
 				{
 					// That didn't finish them. Take them down to one point with poison damage. It'll heal.
-					pOther->TakeDamage( CTakeDamageInfo( this, this, pOther->m_iHealth - 1, DMG_POISON ) );
+					pOther->TakeDamage( CTakeDamageInfo( this, this, MIN( sk_headcrab_poison_dmg.GetInt(), pOther->m_iHealth - 1 ), DMG_POISON ) );
 				}
 				else
 				{
@@ -3308,7 +3309,7 @@ void CBlackHeadcrab::TouchDamage( CBaseEntity *pOther )
 			else
 			{
 				// That didn't finish them. Take them down to one point with poison damage. It'll heal.
-				pOther->TakeDamage( CTakeDamageInfo( this, this, pOther->m_iHealth - 1, DMG_POISON ) );
+				pOther->TakeDamage( CTakeDamageInfo( this, this, MIN( sk_headcrab_poison_dmg.GetInt(), pOther->m_iHealth - 1 ), DMG_POISON ) );
 			}
 		}
 	}

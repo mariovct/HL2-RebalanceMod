@@ -4017,7 +4017,7 @@ void CBasePlayer::CheckTimeBasedDamage()
 				// after the player has been poisoned.
 				if (m_nPoisonDmg > m_nPoisonRestored)
 				{
-					int nDif = MIN(m_nPoisonDmg - m_nPoisonRestored, 5);
+					int nDif = MIN(m_nPoisonDmg - m_nPoisonRestored, 10);
 					TakeHealth(nDif, DMG_GENERIC);
 					m_nPoisonRestored += nDif;
 				}

@@ -5795,7 +5795,7 @@ bool CNPC_MetroPolice::CanSupressEnemy( void )
 //-----------------------------------------------------------------------------
 Vector CNPC_MetroPolice::GetActualShootPosition( const Vector &shootOrigin )
 {
-	if ( m_nBurstMode != BURST_NOT_ACTIVE )
+	//if ( m_nBurstMode != BURST_NOT_ACTIVE )
 		return BaseClass::GetActualShootPosition( shootOrigin );
 	
 	Vector vecEnemyLKP = GetEnemyLKP();

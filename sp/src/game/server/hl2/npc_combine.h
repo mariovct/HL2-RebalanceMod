@@ -46,7 +46,7 @@ public:
 	bool			CheckCanThrowGrenade( const Vector &vecTarget );
 	virtual	bool	CanGrenadeEnemy( bool bUseFreeKnowledge = true );
 	virtual bool	CanAltFireEnemy( bool bUseFreeKnowledge );
-	bool			CanSupressEnemy( void );
+	bool			CanSuppressEnemy( void );
 	int				GetGrenadeConditions( float flDot, float flDist );
 	int				RangeAttack2Conditions( float flDot, float flDist ); // For innate grenade attack
 	int				MeleeAttack1Conditions( float flDot, float flDist ); // For kick/punch

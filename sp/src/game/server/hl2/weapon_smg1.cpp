@@ -59,7 +59,7 @@ public:
 
 	virtual const Vector& GetBulletSpread( void )
 	{
-		static const Vector cone = VECTOR_CONE_3DEGREES; // 3
+		static const Vector cone = VECTOR_CONE_4DEGREES; // 3
 		return cone;
 	}
 
@@ -317,8 +317,8 @@ bool CWeaponSMG1::Reload( void )
 void CWeaponSMG1::AddViewKick( void )
 {
 	#define	EASY_DAMPEN			1.0f	//			0.0
-	#define	MAX_VERTICAL_KICK	6.0f	//Degrees	4.0
-	#define	SLIDE_LIMIT			4.0f	//Seconds	8.0
+	#define	MAX_VERTICAL_KICK	1.5f	//Degrees	4.0
+	#define	SLIDE_LIMIT			1.0f	//Seconds	8.0
 	
 	//Get the view kick
 	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
