@@ -9,6 +9,8 @@
 #include "decals.h"
 #include "fx_quad.h"
 #include "fx_sparks.h"
+#include "dlight.h"
+#include "iefx.h"
 
 #include "tier0/vprof.h"
 
@@ -273,3 +275,46 @@ void ImpactHelicopterCallback( const CEffectData &data )
 
 DECLARE_CLIENT_EFFECT( "HelicopterImpact", ImpactHelicopterCallback );
 
+
+//-----------------------------------------------------------------------------
+// Purpose: Just throwing grenade light effects here.
+//-----------------------------------------------------------------------------
+void Grenade_Blip( ClientEntityHandle_t hEntity, int attachmentIndex )
+{
+	VPROF_BUDGET( "Grenade_Blip", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
+
+	// Grab the origin out of the transform for the attachment
+	// If the client hasn't seen this entity yet, bail.
+	matrix3x4_t	matAttachment;
+	if ( FX_GetAttachmentTransform( hEntity, attachmentIndex, matAttachment ) )
+	{
+		Vector		origin;
+		MatrixGetColumn( matAttachment, 3, &origin );
+		
+		int entityIndex = ClientEntityList().HandleToEntIndex( hEntity );
+		if ( entityIndex >= 0 )
+		{
+			dlight_t *dl = effects->CL_AllocDlight( LIGHT_INDEX_TE_DYNAMIC + entityIndex );
+
+			dl->origin	= origin;
+			dl->color.r = 255;
+			dl->color.g = 0;
+			dl->color.b = 0;
+			dl->color.exponent = 1;
+			dl->radius	= 128;
+			dl->decay	= dl->radius / 0.05f;
+			dl->die		= gpGlobals->curtime + 0.1f;
+			dl->flags = DLIGHT_NO_MODEL_ILLUMINATION;
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void GrenadeBlipCallback( const CEffectData &data )
+{
+	Grenade_Blip( data.m_hEntity, data.m_nAttachmentIndex );
+}
+
+DECLARE_CLIENT_EFFECT( "GrenadeBlip", GrenadeBlipCallback );

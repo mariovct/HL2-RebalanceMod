@@ -62,6 +62,7 @@ ConVar tf_weapon_criticals_bucket_default( "tf_weapon_criticals_bucket_default",
 
 ConVar sk_realistic_reloading( "sk_realistic_reloading", "0" );
 ConVar sk_alternate_recoil( "sk_alternate_recoil", "0" );
+ConVar deployspeedmult( "deployspeedmult", "1.3" );
 
 CBaseCombatWeapon::CBaseCombatWeapon()
 {
@@ -1131,6 +1132,7 @@ void CBaseCombatWeapon::SendViewModelAnim( int nSequence )
 	SetViewModel();
 	Assert( vm->ViewModelIndex() == m_nViewModelIndex );
 	vm->SendViewModelMatchingSequence( nSequence );
+	vm->SetPlaybackRate( GetPlaybackRate() );
 }
 
 float CBaseCombatWeapon::GetViewModelSequenceDuration()
@@ -2398,6 +2400,9 @@ bool CBaseCombatWeapon::SetIdealActivity( Activity ideal )
 
 	//Find the next sequence in the potential chain of sequences leading to our ideal one
 	int nextSequence = FindTransitionSequence( GetSequence(), m_nIdealSequence, NULL );
+	
+	// Makes deploying a little faster.
+	m_flPlaybackRate = ideal == ACT_VM_DRAW ? deployspeedmult.GetFloat() : 1.0;
 
 	// Don't use transitions when we're deploying
 	if ( ideal != ACT_VM_DRAW && IsWeaponVisible() && nextSequence != m_nIdealSequence )

@@ -4463,15 +4463,15 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 		}
 		
 		// Random schedules.
-		switch( random->RandomInt(0,1) )
-			{
-			case 0:	
+	//	switch( random->RandomInt(0,1) )
+	//		{
+	//		case 0:	
 				return SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE;
-				break;
+	//			break;
 				
-			case 1:	
-				return SCHED_METROPOLICE_FLANK_ENEMY;
-				break;
+	//		case 1:	
+	//			return SCHED_METROPOLICE_FLANK_ENEMY;
+	//			break;
 				
 /* 			case 2:	
 				// Don't overwatch if we didn't recently see our enemy!
@@ -4481,7 +4481,7 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 					return SCHED_ENTER_OVERWATCH;
 				}
 				break; */
-			}
+	//		}
 		break;
 		
 	case SCHED_WAKE_ANGRY:
@@ -5146,7 +5146,7 @@ void CNPC_MetroPolice::RunTask( const Task_t *pTask )
 			{
 				if ( IsActivityFinished() )
 				{
-					if ( HasCondition( COND_ENEMY_OCCLUDED ) && !CanSupressEnemy() )
+					if ( HasCondition( COND_ENEMY_OCCLUDED ) /* && !CanSupressEnemy() */ )
 					{
 						TaskComplete();
 					}

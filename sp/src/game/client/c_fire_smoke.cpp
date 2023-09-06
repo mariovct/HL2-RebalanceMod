@@ -385,8 +385,8 @@ void C_EntityFlame::Simulate( void )
 		dlight_t *dl = effects->CL_AllocDlight ( index );
 		dl->origin = GetAbsOrigin();
 		dl->color.r = 255;
-		dl->color.g = 130;
-		dl->color.b = 20;
+		dl->color.g = 100;
+		dl->color.b = 10;
 		dl->color.exponent = -3;
 		dl->die = gpGlobals->curtime + 0.1;
 		dl->style = 6;

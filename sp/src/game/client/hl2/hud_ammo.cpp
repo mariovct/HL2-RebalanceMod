@@ -44,12 +44,14 @@ protected:
 	void UpdateAmmoDisplays();
 	void UpdatePlayerAmmo( C_BasePlayer *player );
 	void UpdateVehicleAmmo( C_BasePlayer *player, IClientVehicle *pVehicle );
+	void UpdateEmplacementAmmo( C_BasePlayer *player );
 	
 private:
 	CHandle< C_BaseCombatWeapon > m_hCurrentActiveWeapon;
 	CHandle< C_BaseEntity > m_hCurrentVehicle;
 	int		m_iAmmo;
 	int		m_iAmmo2;
+	bool	m_bIsPlayerManned;
 	CHudTexture *m_iconPrimaryAmmo;
 };
 
@@ -76,6 +78,7 @@ void CHudAmmo::Init( void )
 	m_iAmmo		= -1;
 	m_iAmmo2	= -1;
 	
+	m_bIsPlayerManned = false;
 	m_iconPrimaryAmmo = NULL;
 
 	wchar_t *tempString = g_pVGuiLocalize->Find("#Valve_Hud_AMMO");
@@ -107,6 +110,7 @@ void CHudAmmo::Reset()
 	m_hCurrentVehicle = NULL;
 	m_iAmmo = 0;
 	m_iAmmo2 = 0;
+	m_bIsPlayerManned = false;
 
 	UpdateAmmoDisplays();
 }
@@ -118,6 +122,9 @@ void CHudAmmo::UpdatePlayerAmmo( C_BasePlayer *player )
 {
 	// Clear out the vehicle entity
 	m_hCurrentVehicle = NULL;
+	
+	// We're not on an emplacement gun anymore.
+	m_bIsPlayerManned = false;
 
 	C_BaseCombatWeapon *wpn = GetActiveWeapon();
 
@@ -246,6 +253,39 @@ void CHudAmmo::UpdateVehicleAmmo( C_BasePlayer *player, IClientVehicle *pVehicle
 	}
 }
 
+void CHudAmmo::UpdateEmplacementAmmo( C_BasePlayer *player )
+{
+	m_hCurrentActiveWeapon = NULL;
+	m_iconPrimaryAmmo = NULL;
+
+	SetPaintEnabled(true);
+	SetPaintBackgroundEnabled(true);
+
+	// get the ammo in our clip
+	int ammo1 = player->m_iMannedGunAmmo;
+	int ammo2 = 0;
+
+	if ( m_bIsPlayerManned )
+	{
+		// same weapon, just update counts
+		SetAmmo(ammo1, true);
+		SetAmmo2(ammo2, true);
+	}
+	else
+	{
+		// diferent weapon, change without triggering
+		SetAmmo(ammo1, false);
+		SetAmmo2(ammo2, false);
+
+		// update our total ammo display
+		g_pClientMode->GetViewportAnimationController()->StartAnimationSequence("WeaponDoesNotUseClips");
+		SetShouldDisplaySecondaryValue(false);
+		
+		g_pClientMode->GetViewportAnimationController()->StartAnimationSequence("WeaponChanged");
+		m_bIsPlayerManned = true;
+	}
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: called every frame to get ammo info from the weapon
 //-----------------------------------------------------------------------------
@@ -262,13 +302,17 @@ void CHudAmmo::UpdateAmmoDisplays()
 	C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
 	IClientVehicle *pVehicle = player ? player->GetVehicle() : NULL;
 
-	if ( !pVehicle )
+	if ( pVehicle )
 	{
-		UpdatePlayerAmmo( player );
+		UpdateVehicleAmmo( player, pVehicle );
+	}
+	else if ( player && player->m_fIsManned && player->m_iMannedGunAmmo != -1 )
+	{
+		UpdateEmplacementAmmo( player );
 	}
 	else
 	{
-		UpdateVehicleAmmo( player, pVehicle );
+		UpdatePlayerAmmo( player );
 	}
 }
 
@@ -472,10 +516,12 @@ protected:
 		{
 			SetAmmo(player->GetAmmoCount(wpn->GetSecondaryAmmoType()));
 		}
+		
+		bool m_bPlayerManned = player && player->m_fIsManned;
 
-		if ( m_hCurrentActiveWeapon != wpn )
+		if ( m_hCurrentActiveWeapon != wpn || m_bPlayerManned )
 		{
-			if ( wpn->UsesSecondaryAmmo() )
+			if ( wpn->UsesSecondaryAmmo() && !m_bPlayerManned )
 			{
 				// we've changed to a weapon that uses secondary ammo
 				g_pClientMode->GetViewportAnimationController()->StartAnimationSequence("WeaponUsesSecondaryAmmo");

@@ -426,6 +426,9 @@ public:
 	// For weapon prediction
 	bool			m_fOnTarget;		//Is the crosshair on a target?
 	
+	bool			m_fIsManned; 		//Are we on a manned gun?
+	int 			m_iMannedGunAmmo;	//The ammo value of the gun we manned.
+	
 	char			m_szAnimExtension[32];
 
 	int				m_afButtonLast;

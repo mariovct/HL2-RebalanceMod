@@ -869,6 +869,9 @@ public:
 	int						m_afButtonForced;	// These are forced onto the player's inputs
 
 	CNetworkVar( bool, m_fOnTarget );		//Is the crosshair on a target?
+	
+	CNetworkVar( bool, m_fIsManned );		//Are we on a manned gun?
+	CNetworkVar( int, m_iMannedGunAmmo );	//The ammo value of the gun we manned.
 
 	char					m_szAnimExtension[32];
 

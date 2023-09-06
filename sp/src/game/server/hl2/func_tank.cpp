@@ -50,6 +50,7 @@
 extern Vector PointOnLineNearestPoint(const Vector& vStartPos, const Vector& vEndPos, const Vector& vPoint);
 
 ConVar mortar_visualize("mortar_visualize", "0" );
+ConVar sk_emplacement_ammo("sk_emplacement_ammo", "1");
 
 BEGIN_DATADESC( CFuncTank )
 	DEFINE_KEYFIELD( m_yawRate, FIELD_FLOAT, "yawrate" ),
@@ -76,6 +77,11 @@ BEGIN_DATADESC( CFuncTank )
 	DEFINE_KEYFIELD( m_iBulletDamage, FIELD_INTEGER, "bullet_damage" ),
 	DEFINE_KEYFIELD( m_iBulletDamageVsPlayer, FIELD_INTEGER, "bullet_damage_vs_player" ),
 	DEFINE_KEYFIELD( m_iszMaster, FIELD_STRING, "master" ),
+	
+	DEFINE_FIELD( m_nAmmoCount,			FIELD_INTEGER ),
+	DEFINE_FIELD( m_flChargeRemainder,	FIELD_FLOAT ),
+	DEFINE_FIELD( m_flDrainRemainder,	FIELD_FLOAT ),
+	DEFINE_FIELD( m_bNoAmmo,			FIELD_BOOLEAN ),
 	
 #ifdef HL2_EPISODIC	
 	DEFINE_KEYFIELD( m_iszAmmoType, FIELD_STRING, "ammotype" ),
@@ -168,16 +174,21 @@ BEGIN_DATADESC( CFuncTank )
 	DEFINE_OUTPUT(m_OnReadyToFire,			"OnReadyToFire"),
 END_DATADESC()
 
+#define AMMO_RECHARGE_RATE	150.0f 	// Per second.
+#define AMMO_DRAIN_AMMOUNT	4.0f	// Ammo drained per shot.
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 CFuncTank::CFuncTank()
 {
 	m_nBulletCount = 0;
+	m_nAmmoCount = 200;
 
 	m_bNPCInRoute = false;
 	m_flNextControllerSearch = 0;
 	m_bShouldFindNPCs = true;
+	m_bNoAmmo = false;
 }
 
 //-----------------------------------------------------------------------------
@@ -1024,7 +1035,12 @@ bool CFuncTank::StartControl( CBaseCombatCharacter *pController )
 		m_spawnflags |= SF_TANK_PLAYER; 
 
 		CBasePlayer *pPlayer = static_cast<CBasePlayer*>( m_hController.Get() );
-		pPlayer->m_Local.m_iHideHUD |= HIDEHUD_WEAPONSELECTION;
+		if ( !sk_emplacement_ammo.GetBool() )
+		{
+			pPlayer->m_Local.m_iHideHUD |= HIDEHUD_WEAPONSELECTION;
+		}
+		pPlayer->m_fIsManned = true;
+		pPlayer->m_iMannedGunAmmo = m_nAmmoCount;
 	}
 	else
 	{
@@ -1080,7 +1096,12 @@ void CFuncTank::StopControl()
 	if ( m_hController->IsPlayer() )
 	{
 		CBasePlayer *pPlayer = static_cast<CBasePlayer*>( m_hController.Get() );
-		pPlayer->m_Local.m_iHideHUD &= ~HIDEHUD_WEAPONSELECTION;
+		if ( !sk_emplacement_ammo.GetBool() )
+		{
+			pPlayer->m_Local.m_iHideHUD &= ~HIDEHUD_WEAPONSELECTION;
+		}
+		pPlayer->m_fIsManned = false;
+		pPlayer->m_iMannedGunAmmo = -1;
 	}
 
 	// Stop thinking.
@@ -1143,6 +1164,10 @@ void CFuncTank::ControllerPostFrame( void )
 
 	if ( !IsPlayerManned() )
 		return;
+	
+	// Check our ammo.
+	if ( !CheckAmmo() )
+		return;
 
 	CBasePlayer *pPlayer = static_cast<CBasePlayer*>( m_hController.Get() );
 	if ( ( pPlayer->m_nButtons & IN_ATTACK ) == 0 )
@@ -1171,7 +1196,21 @@ void CFuncTank::ControllerPostFrame( void )
 	}
 	
 	Fire( bulletCount, WorldBarrelPosition(), forward, pPlayer, false );
- 
+	
+	float DrainAmmount = bulletCount * AMMO_DRAIN_AMMOUNT * 15.0f/
+	SimpleSplineRemapVal( m_fireRate, 15.0f, 60.0f, 15.0f, 35.0f ); // Don't ask why.
+	//DevMsg("Ammo drained is: %f\n", DrainAmmount );
+	
+	RemoveAmmo( DrainAmmount );
+	pPlayer->m_iMannedGunAmmo = m_nAmmoCount;
+	
+	if ( m_nAmmoCount == 0 )
+	{
+		m_bNoAmmo = true;
+		EmitSound( "Weapon_AR2.Empty" );
+	}
+	
+
 #if defined( WIN32 ) && !defined( _X360 ) 
 	// NVNT apply a punch on the player each time fired
 	HapticPunch(pPlayer,0,0,hap_turret_mag.GetFloat());
@@ -1179,7 +1218,8 @@ void CFuncTank::ControllerPostFrame( void )
 	// HACKHACK -- make some noise (that the AI can hear)
 	CSoundEnt::InsertSound( SOUND_COMBAT, WorldSpaceCenter(), FUNCTANK_FIREVOLUME, 0.2 );
 	
-	if( m_iAmmoCount > -1 )
+	// This does literally nothing.
+/* 	if( m_iAmmoCount > -1 )
 	{
 		if( !(m_iAmmoCount % 10) )
 		{
@@ -1193,7 +1233,7 @@ void CFuncTank::ControllerPostFrame( void )
 			StopControl();
 			return;				
 		}
-	}
+	} */
 	
 	SetNextAttack( gpGlobals->curtime + (1/m_fireRate) );
 }
@@ -1536,6 +1576,18 @@ void CFuncTank::Think( void )
 	FuncTankPreThink();
 
 	m_hFuncTankTarget = NULL;
+	
+	CBasePlayer *pPlayer = UTIL_PlayerByIndex(1);
+	
+	if ( IsPlayerManned() && ( ( pPlayer->m_nButtons & IN_ATTACK ) == 0 || m_bNoAmmo ) )
+	{
+		RechargeAmmo();
+	}
+	
+	if ( IsPlayerManned() )
+	{
+		pPlayer->m_iMannedGunAmmo = m_nAmmoCount;
+	}
 
 	// Look for a new controller?
 	if ( IsControllable() && !HasController() && (m_flNextControllerSearch <= gpGlobals->curtime) )
@@ -1550,7 +1602,6 @@ void CFuncTank::Think( void )
 		}
 
 #ifdef FUNCTANK_AUTOUSE
-		CBasePlayer *pPlayer = UTIL_PlayerByIndex(1);
 		bool bThinkFast = false;
 
 		if( pPlayer )
@@ -2419,6 +2470,98 @@ bool CFuncTank::HasLOSTo( CBaseEntity *pEntity )
 
 	return ( tr.fraction == 1.0 || tr.m_pEnt == pEntity );
 }
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CFuncTank::OnRestore()
+{
+	BaseClass::OnRestore();
+	if ( IsPlayerManned() )
+	{
+		CBasePlayer *pPlayer = static_cast<CBasePlayer*>( GetController() );
+		pPlayer->m_fIsManned = true;
+		pPlayer->m_iMannedGunAmmo = m_nAmmoCount;
+	}
+}
+//-----------------------------------------------------------------------------
+// Removes the ammo...
+//-----------------------------------------------------------------------------
+void CFuncTank::RemoveAmmo( float flAmmoAmount )
+{
+	if ( !sk_emplacement_ammo.GetBool() )
+		return;
+	
+	m_flDrainRemainder += flAmmoAmount;
+	int nAmmoToRemove = (int)m_flDrainRemainder;
+	m_flDrainRemainder -= nAmmoToRemove;
+	m_nAmmoCount -= nAmmoToRemove;
+	if ( m_nAmmoCount < 0 )
+	{
+		m_nAmmoCount = 0;
+		m_flDrainRemainder = 0.0f;
+	}
+}
+
+
+//-----------------------------------------------------------------------------
+// Recharges the ammo...
+//-----------------------------------------------------------------------------
+void CFuncTank::RechargeAmmo(void)
+{
+ 	if ( !sk_emplacement_ammo.GetBool() )
+	{
+		m_nAmmoCount = -1;
+		return;
+	}
+
+	int nMaxAmmo = 200;
+	if ( m_nAmmoCount == nMaxAmmo )
+		return;
+
+	float flRechargeRate = AMMO_RECHARGE_RATE * 
+	SimpleSplineRemapVal( m_nAmmoCount, 0.0f, 200.0f, 1.0f, 1.75f ); // This feels about right.
+	float flChargeAmount = flRechargeRate * gpGlobals->frametime;
+	if ( m_flDrainRemainder != 0.0f )
+	{
+		if ( m_flDrainRemainder >= flChargeAmount )
+		{
+			m_flDrainRemainder -= flChargeAmount;
+			return;
+		}
+		else
+		{
+			flChargeAmount -= m_flDrainRemainder;
+			m_flDrainRemainder = 0.0f;
+		}
+	}
+
+	m_flChargeRemainder += flChargeAmount;
+	int nAmmoToAdd = (int)m_flChargeRemainder;
+	m_flChargeRemainder -= nAmmoToAdd;
+	m_nAmmoCount += nAmmoToAdd;
+	if ( m_nAmmoCount > nMaxAmmo )
+	{
+		m_nAmmoCount = nMaxAmmo;
+		m_flChargeRemainder = 0.0f;
+	}
+}
+
+//-----------------------------------------------------------------------------
+// Checks our ammo supply...
+//-----------------------------------------------------------------------------
+bool CFuncTank::CheckAmmo(void)
+{
+	// No ammo? CANT FIRE!
+	if ( m_nAmmoCount == 0 )
+		return false;
+	
+	// If we ran out, don't allow firing again until we recharge atleast 25% of our ammo back.
+	if ( m_bNoAmmo && (float)m_nAmmoCount < 200.0f * 0.24f )
+		return false;
+	
+	m_bNoAmmo = false;
+	return true;
+}
 
 // #############################################################################
 //   CFuncTankGun
@@ -2900,7 +3043,7 @@ void CFuncTankAirboatGun::ControllerPostFrame( void )
 	if ( IsPlayerManned() )
 	{
 		CBasePlayer *pPlayer = static_cast<CBasePlayer*>( GetController() );
-		if ( pPlayer->m_nButtons & IN_ATTACK )
+		if ( pPlayer->m_nButtons & IN_ATTACK && CheckAmmo() )
 		{
 			StartFiring();
 		}

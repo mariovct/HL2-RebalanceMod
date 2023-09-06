@@ -259,6 +259,13 @@ void C_BaseCombatWeapon::DrawCrosshair()
 */
 
 	CHudCrosshair *crosshair = GET_HUDELEMENT( CHudCrosshair );
+	
+	if ( player->m_fIsManned )
+	{
+		crosshair->SetCrosshair( gHUD.GetIcon( "gunhair" ), clr );
+		return;
+	}
+	
 	if ( !crosshair )
 		return;
 

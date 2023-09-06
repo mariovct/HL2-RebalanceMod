@@ -248,39 +248,9 @@ void CHudCrosshair::Paint( void )
 
 	if( bBehindCamera )
 		return;
-
-	float flWeaponScale = 1;
-	int iTextureW = m_pCrosshair->Width();
-	int iTextureH = m_pCrosshair->Height();
-	C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
-	if ( pWeapon && !m_pCrosshair->bRenderUsingFont )
-	{
-		//pWeapon->GetWeaponCrosshairScale( flWeaponScale );
-		flWeaponScale = m_pCrosshair->Scale();
-	}
-	
-	// Default sizes:
-	float flScreenScaleWidth = (float)ScreenWidth() / 2560.0;
-	float flScreenScaleHeight = (float)ScreenHeight() / 1440.0;
-	
-	// Using only one seems to preserve shape better.
-	float flScalar = MAX(flScreenScaleWidth, flScreenScaleHeight);
 	
 	Color clr = m_clrCrosshair;
-	
-	float flWidth = flWeaponScale * flScalar * (float)iTextureW;
-	float flHeight = flWeaponScale * flScalar * (float)iTextureH;
-	int iWidth = (int)( flWidth + 0.5f );
-	int iHeight = (int)( flHeight + 0.5f );
-	int iX = (int)( x + 0.5f );
-	int iY = (int)( y + 0.5f );
-
-	m_pCrosshair->DrawSelfCropped (
-		iX-(iWidth/2), iY-(iHeight/2),
-		0, 0,
-		iTextureW, iTextureH,
-		iWidth, iHeight,
-		clr );
+	m_pCrosshair->DrawSelf( x, y, clr );
 }
 
 //-----------------------------------------------------------------------------

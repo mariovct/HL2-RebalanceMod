@@ -288,6 +288,7 @@ CBaseAnimating::CBaseAnimating()
 	m_fadeMaxDist = 0;
 	m_flFadeScale = 0.0f;
 	m_fBoneCacheFlags = 0;
+	m_flPlaybackRate = 1;
 }
 
 CBaseAnimating::~CBaseAnimating()
@@ -948,7 +949,7 @@ float CBaseAnimating::SequenceDuration( CStudioHdr *pStudioHdr, int iSequence )
 		return 0.1;
 	}
 
-	return Studio_Duration( pStudioHdr, iSequence, GetPoseParameterArray() );
+	return Studio_Duration( pStudioHdr, iSequence, GetPoseParameterArray() ) * 1 / m_flPlaybackRate;
 }
 
 float CBaseAnimating::GetSequenceCycleRate( CStudioHdr *pStudioHdr, int iSequence )

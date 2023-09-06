@@ -69,8 +69,10 @@ private:
 	bool	EventTimeElapsed( void );
 
 	int		m_lastAmmo;
+	int		m_lastMannedGunAmmo;
 	int		m_lastCarry;
 	int		m_lastHealth;
+	bool 	m_bCurrentlyManned;
 
 	float	m_ammoFade;
 	float	m_healthFade;
@@ -120,8 +122,11 @@ void CHUDQuickInfo::Init( void )
 	m_healthFade	= 0.0f;
 
 	m_lastAmmo		= 0;
+	m_lastMannedGunAmmo	= 0;
 	m_lastCarry		= 0;
 	m_lastHealth	= 100;
+	
+	m_bCurrentlyManned = false;
 
 	m_warnAmmo		= false;
 	m_warnHealth	= false;
@@ -250,7 +255,7 @@ void CHUDQuickInfo::Paint()
 		return;
 
 	C_BaseCombatWeapon *pWeapon = GetActiveWeapon();
-	if ( pWeapon == NULL )
+	if ( pWeapon == NULL && ( !player->m_fIsManned || player->m_iMannedGunAmmo == -1 ) )
 		return;
 
 	float fX, fY;
@@ -292,20 +297,29 @@ void CHUDQuickInfo::Paint()
 			m_warnHealth = false;
 		}
 	}
+	
+	bool IsManned = player->m_fIsManned && player->m_iMannedGunAmmo != -1;
 
 	// Check our ammo for a warning
 	int	ammo = pWeapon->Clip1();
 	float CurrentCarry = player->GetAmmoCount(pWeapon->m_iPrimaryAmmoType);
 	
-	if ( ammo != m_lastAmmo || CurrentCarry != m_lastCarry )
+	if ( ammo != m_lastAmmo || CurrentCarry != m_lastCarry || ( IsManned && m_lastMannedGunAmmo != player->m_iMannedGunAmmo ) || IsManned != m_bCurrentlyManned )
 	{
 		UpdateEventTime();
 		m_lastAmmo	= ammo;
 		m_lastCarry	= CurrentCarry;
+		m_lastMannedGunAmmo = player->m_iMannedGunAmmo;
+		m_bCurrentlyManned = player->m_fIsManned && player->m_iMannedGunAmmo != -1;
+		
 		float ammoPerc;
 
 		// Find how far through the current clip we are
-		if ( pWeapon->GetMaxClip1() == 1 || !pWeapon->UsesClipsForAmmo1() )
+		if ( IsManned )
+		{ 
+			ammoPerc = (float)player->m_iMannedGunAmmo / 200;
+		}
+		else if ( pWeapon->GetMaxClip1() == 1 || !pWeapon->UsesClipsForAmmo1() )
 		{ 
 			float MaxCarry = GetAmmoDef()->MaxCarry(pWeapon->m_iPrimaryAmmoType);
 			ammoPerc = (float) CurrentCarry / (float) MaxCarry;
@@ -322,9 +336,12 @@ void CHUDQuickInfo::Paint()
 			{
 				m_ammoFade = 100;
 				m_warnAmmo = true;
-
-				CLocalPlayerFilter filter;
-				C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "HUDQuickInfo.LowAmmo" );
+				
+				if ( !IsManned )
+				{
+					CLocalPlayerFilter filter;
+					C_BaseEntity::EmitSound( filter, SOUND_FROM_LOCAL_PLAYER, "HUDQuickInfo.LowAmmo" );
+				}
 			}
 		}
 		else
@@ -371,7 +388,7 @@ void CHUDQuickInfo::Paint()
 	}
 
 	// Update our ammo
-	if ( m_ammoFade > 0.0f )
+	if ( m_ammoFade > 0.0f && !IsManned )
 	{
 		DrawWarning( xCenter + m_icon_rb->Width(), yCenter, m_icon_rb, m_ammoFade );
 	}
@@ -379,7 +396,11 @@ void CHUDQuickInfo::Paint()
 	{
 		float ammoPerc;
 		
-		if ( pWeapon->GetMaxClip1() == 1 || !pWeapon->UsesClipsForAmmo1() )
+		if ( IsManned && player->m_iMannedGunAmmo != -1 )
+		{ 
+			ammoPerc = 1.0f - ( (float) player->m_iMannedGunAmmo / 200.0f );
+		}
+		else if ( pWeapon->GetMaxClip1() == 1 || !pWeapon->UsesClipsForAmmo1() )
 		{
 			float CurrentCarry = player->GetAmmoCount(pWeapon->m_iPrimaryAmmoType);
 			float MaxCarry = GetAmmoDef()->MaxCarry(pWeapon->m_iPrimaryAmmoType);

@@ -57,7 +57,7 @@ int g_fCombineQuestion;				// true if an idle grunt asked a question. Cleared wh
 #define COMBINE_GUN_CROUCHING_POSITION	Vector( 0, 0, 36 )
 #define COMBINE_SHOTGUN_STANDING_POSITION	Vector( 0, 0, 36 )
 #define COMBINE_SHOTGUN_CROUCHING_POSITION	Vector( 0, 0, 36 )
-#define COMBINE_MIN_CROUCH_DISTANCE		128.0
+#define COMBINE_MIN_CROUCH_DISTANCE			384
 
 //-----------------------------------------------------------------------------
 // Static stuff local to this file.
@@ -1285,7 +1285,7 @@ void CNPC_Combine::RunTask( const Task_t *pTask )
 			{
 				if ( IsActivityFinished() )
 				{
-					if ( HasCondition( COND_ENEMY_OCCLUDED ) && !CanSuppressEnemy() )
+					if ( HasCondition( COND_ENEMY_OCCLUDED )/*  && !CanSuppressEnemy() */ )
 					{
 						TaskComplete();
 					}
@@ -1837,7 +1837,7 @@ int CNPC_Combine::SelectCombatSchedule()
 				// Start with trying to see if a grenade can be thrown!
 				return SCHED_RANGE_ATTACK2;
 			}
-  			if ( CanOccupyAttackSlot() )
+  			if ( CanOccupyAttackSlot() && !IsStrategySlotRangeOccupied( SQUAD_SLOT_GRENADE1, SQUAD_SLOT_GRENADE1 ) )
 			{
 				// Try to charge in and break the enemy's cover!
 				return SCHED_ESTABLISH_LINE_OF_FIRE;
@@ -2368,17 +2368,17 @@ int CNPC_Combine::TranslateSchedule( int scheduleType )
 			}
 		
 		// Random schedules.
-		switch( random->RandomInt(0,1) )
-			{
-			case 0:	
+	//	switch( random->RandomInt(0,1) )
+	//		{
+	//		case 0:	
 				return SCHED_COMBINE_ESTABLISH_LINE_OF_FIRE;
 				
-			case 1:	
-				return SCHED_COMBINE_FLANK_ENEMY;
+	//		case 1:	
+	//			return SCHED_COMBINE_FLANK_ENEMY;
 				
 			//case 2:
 			//	return SCHED_COMBINE_ENTER_OVERWATCH;
-			}
+	//		}
 		}
 		break;
 	case SCHED_HIDE_AND_RELOAD:
@@ -3596,8 +3596,8 @@ bool CNPC_Combine::ShouldPickADeathPose( void )
 	if ( !m_bUseAttackSlots )
 		return true;
 	
-	if ( PlayerHasMegaPhysCannon() )
-		return true;
+//	if ( PlayerHasMegaPhysCannon() )
+//		return true;
 	
 	if ( OccupyStrategySlotRange( SQUAD_SLOT_ATTACK1, SQUAD_SLOT_ATTACK2 ) )
 		return true;
@@ -3736,7 +3736,7 @@ DEFINE_SCHEDULE
  "	Tasks"
  "		 TASK_SET_FAIL_SCHEDULE				SCHEDULE:SCHED_COMBINE_RUN_AWAY_FROM_BEST_SOUND"
  //"		 TASK_STOP_MOVING					0"
- "		 TASK_COMBINE_SIGNAL_BEST_SOUND		0"
+ //"		 TASK_COMBINE_SIGNAL_BEST_SOUND		0"
  "		 TASK_FIND_COVER_FROM_BEST_SOUND	0"
  "		 TASK_RUN_PATH						0"
  "		 TASK_WAIT_FOR_MOVEMENT				0"

@@ -583,7 +583,26 @@ void CHudTexture::Precache( void )
 
 void CHudTexture::DrawSelf( int x, int y, const Color& clr ) const
 {
-	DrawSelf( x, y, Width(), Height(), clr );
+	int iWidth = Width();
+	int iHeight = Height();
+	
+	if ( Scale() != 1 )
+	{
+		// Default sizes:
+		float flScreenScaleWidth  = ScreenWidth() / 2560.0;
+		float flScreenScaleHeight = ScreenHeight() / 1440.0;
+				
+		// Using only one seems to preserve shape better.
+		float flScalar = Scale() * MAX(flScreenScaleWidth, flScreenScaleHeight);
+				
+		iWidth = (int)( flScalar * Width() + 0.5f );
+		iHeight = (int)( flScalar * Height() + 0.5f );
+				
+		x -= iWidth  / 2; 
+		y -= iHeight / 2;
+	}
+	
+	DrawSelf( x, y, iWidth, iHeight, clr );
 }
 
 void CHudTexture::DrawSelf( int x, int y, int w, int h, const Color& clr ) const
@@ -602,8 +621,7 @@ void CHudTexture::DrawSelf( int x, int y, int w, int h, const Color& clr ) const
 
 		vgui::surface()->DrawSetTexture( textureId );
 		vgui::surface()->DrawSetColor( clr );
-		vgui::surface()->DrawTexturedSubRect( x, y, x + w, y + h, 
-			texCoords[ 0 ], texCoords[ 1 ], texCoords[ 2 ], texCoords[ 3 ] );
+		vgui::surface()->DrawTexturedSubRect( x, y, x + w, y + h, texCoords[ 0 ], texCoords[ 1 ], texCoords[ 2 ], texCoords[ 3 ] );
 	}
 }
 
@@ -656,11 +674,7 @@ void CHudTexture::DrawSelfCropped( int x, int y, int cropx, int cropy, int cropw
 
 		vgui::surface()->DrawSetTexture( textureId );
 		vgui::surface()->DrawSetColor( clr );
-		vgui::surface()->DrawTexturedSubRect( 
-			x, y, 
-			x + finalWidth, y + finalHeight, 
-			tCoords[ 0 ], tCoords[ 1 ], 
-			tCoords[ 2 ], tCoords[ 3 ] );
+		vgui::surface()->DrawTexturedSubRect( x, y,	x + finalWidth, y + finalHeight, tCoords[ 0 ], tCoords[ 1 ], tCoords[ 2 ], tCoords[ 3 ] );
 	}
 }
 

@@ -289,10 +289,6 @@ void C_PropVehicleDriveable::DrawHudElements( )
 				y -= 0.5 * screen[1] * ScreenHeight() + 0.5;
 #endif
 			}
-
-
-			x -= pIcon->Width() / 2; 
-			y -= pIcon->Height() / 2; 
 			
 			Color	clr = ( m_bUnableToFire ) ? gHUD.m_clrCaution : gHUD.m_clrNormal;
 			pIcon->DrawSelf( x, y, clr );

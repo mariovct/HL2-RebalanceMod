@@ -76,6 +76,7 @@ public:
 	bool	CreateVPhysics( void );
 	bool	KeyValue( const char *szKeyName, const char *szValue );
 	void	UpdateOnRemove();
+	virtual void	OnRestore();
 
 	void	SetYawRate( float flYawRate ) { m_yawRate = flYawRate; }
 	void	SetPitchRate( float flPitchRate ) { m_pitchRate = flPitchRate; }
@@ -92,6 +93,7 @@ public:
 	virtual	void FuncTankPostThink() { return; }
 
 	int		GetAmmoCount( void )						{ return m_iAmmoCount; }
+	bool 	CheckAmmo( void );
 
 	// NPC
 	bool	NPC_FindManPoint( Vector &vecPos );
@@ -218,6 +220,10 @@ private:
 
 	// We lost our target! 
 	void LostTarget( void );
+	
+	// Ammo.
+	void RechargeAmmo( void );
+	void RemoveAmmo( float flAmmoAmount );
 
 	// Purpose: 
 	void ComputeLeadingPosition( const Vector &vecShootPosition, CBaseEntity *pTarget, Vector *pLeadPosition );
@@ -236,6 +242,11 @@ protected:
 	TANKBULLET				m_bulletType;	// Bullet type
 	int						m_iBulletDamage; // 0 means use Bullet type's default damage
 	int						m_iBulletDamageVsPlayer; // Damage vs player. 0 means use m_iBulletDamage
+	
+	float			m_flChargeRemainder;
+	float			m_flDrainRemainder;
+	int				m_nAmmoCount;
+	bool			m_bNoAmmo;
 
 #ifdef HL2_EPISODIC
 	string_t				m_iszAmmoType;		// The name of the ammodef that we use when we fire. Bullet damage still comes from keyvalues.

@@ -12,6 +12,7 @@
 #include "Sprite.h"
 #include "SpriteTrail.h"
 #include "soundent.h"
+#include "te_effect_dispatch.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -46,6 +47,8 @@ public:
 	void	SetVelocity( const Vector &velocity, const AngularImpulse &angVelocity );
 	int		OnTakeDamage( const CTakeDamageInfo &inputInfo );
 	void	BlipSound() { EmitSound( "Grenade.Blip" ); }
+	void	BlipEffect( void );
+	void	CheckInitialBlip( void );
 	void	DelayThink();
 	void	VPhysicsUpdate( IPhysicsObject *pPhysics );
 	void	OnPhysGunPickup( CBasePlayer *pPhysGunUser, PhysGunPickup_t reason );
@@ -338,7 +341,7 @@ void CGrenadeFrag::DelayThink()
 		m_bHasWarnedAI = true;
 	}
 	
-	if ( !m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime - 1 )
+	if ( /* !m_bHasWarnedAI &&  */gpGlobals->curtime >= m_flWarnAITime - 1 )
 	{
 #if !defined( CLIENT_DLL )
 		CSoundEnt::InsertSound ( SOUND_DANGER, GetAbsOrigin(), sk_fraggrenade_radius.GetInt(), 1.5, this );
@@ -348,6 +351,7 @@ void CGrenadeFrag::DelayThink()
 	if( gpGlobals->curtime > m_flNextBlipTime )
 	{
 		BlipSound();		
+		BlipEffect();
 		if( m_bHasWarnedAI )
 		{
 			m_flNextBlipTime = gpGlobals->curtime + FRAG_GRENADE_BLIP_FAST_FREQUENCY;
@@ -359,6 +363,34 @@ void CGrenadeFrag::DelayThink()
 	}
 
 	SetNextThink( gpGlobals->curtime + 0.1 );
+}
+
+void CGrenadeFrag::BlipEffect( void )
+{
+	CEffectData data;
+	data.m_nEntIndex = entindex();
+	data.m_nAttachmentIndex = LookupAttachment( "fuse" );
+	DispatchEffect( "GrenadeBlip", data );
+}
+
+void CGrenadeFrag::CheckInitialBlip( void )
+{
+	if ( sk_plr_grenade_is_cookable.GetBool() )
+	{
+		float nextblip = m_flNextBlipTime - gpGlobals->curtime;
+		
+		//DevMsg("NextBlip is: %f \n", nextblip );
+		
+		if( m_bHasWarnedAI )
+		{
+			BlipEffect();
+		}
+		else
+		{
+			if ( nextblip > 0.75 )
+				BlipEffect();
+		}
+	}
 }
 
 void CGrenadeFrag::SetVelocity( const Vector &velocity, const AngularImpulse &angVelocity )
@@ -448,6 +480,7 @@ CBaseGrenade *Fraggrenade_PlayerCreate( const Vector &position, const QAngle &an
 	pGrenade->SetCombineSpawned( false );
 	pGrenade->m_flNextBlipTime = sk_plr_grenade_is_cookable.GetBool() ? nextblip : pGrenade->m_flNextBlipTime;
 	pGrenade->m_flWarnAITime = sk_plr_grenade_is_cookable.GetBool() ? warnAItime : pGrenade->m_flWarnAITime;
+	pGrenade->CheckInitialBlip();
 
 	return pGrenade;
 }
