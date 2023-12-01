@@ -1934,6 +1934,7 @@ private:
 	void StartTurn( float flDeltaYaw );
 	bool FindCoverFromEnemy( bool bNodesOnly = false, float flMinDistance = 0, float flMaxDistance = FLT_MAX );
 	bool FindCoverFromBestSound( Vector *pCoverPos );
+	bool FindCoverFromEnemyInRange( float flMinDistance = 0, float flMaxDistance = FLT_MAX );
 	void StartScriptMoveToTargetTask( int task );
 	
 	void RunDieTask();

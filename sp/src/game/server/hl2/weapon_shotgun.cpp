@@ -548,7 +548,7 @@ void CWeaponShotgun::SecondaryAttack( void )
 	m_flNextSecondaryAttack = gpGlobals->curtime + 1.0;
 
 	// Pick up the rest of the burst through the think function.
-	SetNextThink( gpGlobals->curtime + 0.14 );
+	SetNextThink( gpGlobals->curtime + 0.16 );
 }
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -567,7 +567,6 @@ void CWeaponShotgun::BurstThink( void )
 	}
 
 	pPlayer->m_nButtons &= ~IN_ATTACK2;
-	// MUST call sound before removing a round from the clip of a CMachineGun
 	
 	//WeaponSound(WPN_DOUBLE);
 	WeaponSound(SINGLE);
@@ -608,12 +607,6 @@ void CWeaponShotgun::BurstThink( void )
 		// HEV suit - indicate out of ammo condition
 		pPlayer->SetSuitUpdate("!HEV_AMO0", FALSE, 0); 
 	}
-
- 	if( m_iClip1 )
-	{
-		// pump so long as some rounds are left.
-		m_bNeedPump = true;
-	}
 	
 	m_iSecondaryAttacks++;
 	gamestats->Event_WeaponFired( pPlayer, false, GetClassname() );
@@ -623,13 +616,14 @@ void CWeaponShotgun::BurstThink( void )
 	{
 		// The burst is over!
 		SetThink(NULL);
+		m_bNeedPump = true;
 
 		// idle immediately to stop the firing animation
 	//	SetWeaponIdleTime( gpGlobals->curtime );
 		return;
 	}
 
-	SetNextThink( gpGlobals->curtime + GetFireRate() );
+	SetNextThink( gpGlobals->curtime + 0.16 );
 }
 
 //-----------------------------------------------------------------------------
@@ -840,6 +834,8 @@ void CWeaponShotgun::ItemHolsterFrame( void )
 	// We can't be active
 	if ( GetOwner()->GetActiveWeapon() == this )
 		return;
+	
+	m_iBurstSize = 0;
 
 	// If it's been longer than three seconds, reload
 	if ( ( gpGlobals->curtime - m_flHolsterTime ) > sk_auto_reload_time.GetFloat() )

@@ -76,7 +76,6 @@ public:
 	virtual float	GetFireRate( void );
 	
 	virtual void	ItemPostFrame( void );
-	virtual void	SetFireDuration( void );
 
 	virtual bool	Deploy( void );
 	virtual void	WeaponSound( WeaponSound_t shoot_type, float soundtime = 0.0f );

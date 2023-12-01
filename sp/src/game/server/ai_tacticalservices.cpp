@@ -16,11 +16,12 @@
 #include "ai_navigator.h"
 #include "ai_networkmanager.h"
 #include "ai_hint.h"
+#include "ai_routedist.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-ConVar ai_find_lateral_cover( "ai_find_lateral_cover", "1" );
+ConVar ai_find_lateral_cover( "ai_find_lateral_cover", "0" );
 ConVar ai_find_lateral_los( "ai_find_lateral_los", "1" );
 
 #ifdef _DEBUG
@@ -128,7 +129,6 @@ bool CAI_TacticalServices::FindCoverPos( const Vector &vThreatPos, const Vector 
 {
 	return FindCoverPos( GetLocalOrigin(), vThreatPos, vThreatEyePos, flMinDist, flMaxDist, pResult );
 }
-
 //-------------------------------------
 
 bool CAI_TacticalServices::FindCoverPos( const Vector &vNearPos, const Vector &vThreatPos, const Vector &vThreatEyePos, float flMinDist, float flMaxDist, Vector *pResult )
@@ -137,7 +137,7 @@ bool CAI_TacticalServices::FindCoverPos( const Vector &vNearPos, const Vector &v
 
 	MARK_TASK_EXPENSIVE();
 
-	int node = FindCoverNode( vNearPos, vThreatPos, vThreatEyePos, flMinDist, flMaxDist, false );
+	int node = FindCoverNode( vNearPos, vThreatPos, vThreatEyePos, flMinDist, flMaxDist, -1.0 );
 	
 	if (node == NO_NODE)
 		return false;
@@ -145,22 +145,16 @@ bool CAI_TacticalServices::FindCoverPos( const Vector &vNearPos, const Vector &v
 	*pResult = GetNodePos( node );
 	return true;
 }
-//-------------------------------------
 
-bool CAI_TacticalServices::FindAdvancePos( const Vector &vThreatPos, const Vector &vThreatEyePos, float flMinDist, float flMaxDist, Vector *pResult )
+//------------------------------------- HACK: Extra Overload
+
+bool CAI_TacticalServices::FindCoverPos( const Vector &vNearPos, const Vector &vThreatPos, const Vector &vThreatEyePos, float flMinDist, float flMaxDist, Vector *pResult, float flDesiredDist )
 {
-	return FindAdvancePos( GetLocalOrigin(), vThreatPos, vThreatEyePos, flMinDist, flMaxDist, pResult );
-}
-
-//-------------------------------------
-
-bool CAI_TacticalServices::FindAdvancePos( const Vector &vNearPos, const Vector &vThreatPos, const Vector &vThreatEyePos, float flMinDist, float flMaxDist, Vector *pResult )
-{
-	AI_PROFILE_SCOPE( CAI_TacticalServices_FindAdvancePos );
+	AI_PROFILE_SCOPE( CAI_TacticalServices_FindCoverPos );
 
 	MARK_TASK_EXPENSIVE();
 
-	int node = FindCoverNode( vNearPos, vThreatPos, vThreatEyePos, flMinDist, flMaxDist, true );
+	int node = FindCoverNode( vNearPos, vThreatPos, vThreatEyePos, flMinDist, flMaxDist, flDesiredDist );
 	
 	if (node == NO_NODE)
 		return false;
@@ -168,6 +162,7 @@ bool CAI_TacticalServices::FindAdvancePos( const Vector &vNearPos, const Vector 
 	*pResult = GetNodePos( node );
 	return true;
 }
+
 //-------------------------------------
 // Checks lateral cover
 //-------------------------------------
@@ -227,13 +222,13 @@ bool CAI_TacticalServices::FindLateralCover( const Vector &vNearPos, const Vecto
 	Vector	vecStepRight;
 	Vector  vecCheckStart;
 	int		i;
-
+	
 	if ( TestLateralCover( vecThreat, vNearPos, flMinDist ) )
 	{
 		*pResult = GetLocalOrigin();
 		return true;
 	}
-
+	
 	if( !ai_find_lateral_cover.GetBool() )
 	{
 		// Force the NPC to use the nodegraph to find cover. NOTE: We let the above code run
@@ -355,12 +350,12 @@ int CAI_TacticalServices::FindBackAwayNode(const Vector &vecThreat )
 
 int CAI_TacticalServices::FindCoverNode(const Vector &vThreatPos, const Vector &vThreatEyePos, float flMinDist, float flMaxDist )
 {
-	return FindCoverNode(GetLocalOrigin(), vThreatPos, vThreatEyePos, flMinDist, flMaxDist, false );
+	return FindCoverNode(GetLocalOrigin(), vThreatPos, vThreatEyePos, flMinDist, flMaxDist, -1.0 );
 }
 
 //-------------------------------------
 
-int CAI_TacticalServices::FindCoverNode(const Vector &vNearPos, const Vector &vThreatPos, const Vector &vThreatEyePos, float flMinDist, float flMaxDist, bool m_bIsAdvancing)
+int CAI_TacticalServices::FindCoverNode(const Vector &vNearPos, const Vector &vThreatPos, const Vector &vThreatEyePos, float flMinDist, float flMaxDist, float flDesiredDist )
 {
 	if ( !CAI_NetworkManager::NetworksLoaded() )
 		return NO_NODE;
@@ -404,7 +399,10 @@ int CAI_TacticalServices::FindCoverNode(const Vector &vNearPos, const Vector &vT
 	wasVisited.Set( iMyNode );
 	float flMinDistSqr = flMinDist*flMinDist;
 	float flMaxDistSqr = flMaxDist*flMaxDist;
-
+	
+	int iIdealNode = NULL;
+	float flScore = 0;
+	
 	static int nSearchRandomizer = 0;		// tries to ensure the links are searched in a different order each time;
 
 	// Search until the list is empty bookmark
@@ -428,26 +426,45 @@ int CAI_TacticalServices::FindCoverNode(const Vector &vNearPos, const Vector &vT
 				// Check if this location will block the threat's line of sight to me
 				if (GetOuter()->IsCoverPosition(vThreatEyePos, vEyePos))
 				{
-					// --------------------------------------------------------
-					// Don't let anyone else use this node for a while
-					// --------------------------------------------------------
-					pNode->Lock( 1.0 );
-
-					if ( pNode->GetHint() && ( pNode->GetHint()->HintType() == HINT_TACTICAL_COVER_MED || pNode->GetHint()->HintType() == HINT_TACTICAL_COVER_LOW ) )
-					{
-						if ( GetOuter()->GetHintNode() )
-						{
-							GetOuter()->GetHintNode()->Unlock(GetOuter()->GetHintDelay(GetOuter()->GetHintNode()->HintType()));
-							GetOuter()->SetHintNode( NULL );
-						}
-
-						GetOuter()->SetHintNode( pNode->GetHint() );
-					}
-
 					// The next NPC who searches should use a slight different pattern
 					nSearchRandomizer = nodeIndex;
 					DebugFindCover( pNode->GetId(), vEyePos, vThreatEyePos, 0, 255, 0 );
-					return nodeIndex;
+					
+					// Setup our cover node
+					if ( iIdealNode == NULL )
+						iIdealNode = nodeIndex;
+					
+					// If there's no desired dist, use the first node given to us (This is default behavior)
+					if ( flDesiredDist < 0.0 )
+						break;
+					
+					// Try to base the cover location on the desired distance
+					float flIdealDist = flDesiredDist;
+					float flNodeScore = 0;
+						
+					// Figure out the distance from the enemy to the cover
+					float flNodePathDist = ComputePathDistance( GetOuter()->GetNavType(), vThreatPos, nodeOrigin );
+					float flNodeDirectDist = ( vThreatPos - nodeOrigin ).Length();
+						
+					float flNodeMedianDist = ( flNodePathDist + flNodeDirectDist ) / 2;
+						
+					// Score it based on how close it is to the desired distance
+					flNodeScore += ( flIdealDist - fabsf(flNodeMedianDist - flIdealDist) ) / flIdealDist;
+						
+					// Distance from us to the cover
+					float flNearPathDist = ComputePathDistance( GetOuter()->GetNavType(), vNearPos, nodeOrigin );
+					float flNearDirectDist = ( vNearPos - nodeOrigin ).Length();
+						
+					float flNearMedianDist = ( flNearPathDist + flNearDirectDist ) / 2;
+
+					// Bias out really long routes
+					flNodeScore += 1.0 - ( flNearMedianDist / flNodeMedianDist );
+						
+					if ( flNodeScore > flScore )
+					{
+						flScore = flNodeScore;
+						iIdealNode = nodeIndex;
+					}
 				}
 				else
 				{
@@ -488,24 +505,37 @@ int CAI_TacticalServices::FindCoverNode(const Vector &vNearPos, const Vector &vT
 					// the threat in order to take cover from it.
 					float threatDist = (vThreatPos - nodeOrigin).LengthSqr();
 
-					// Now check this node is not too close towards the threat bookmark
-					if ( ( ( dist < threatDist * 1.5 ) && !m_bIsAdvancing ) )
+					// Now check this node is not too close towards the threat
+					if ( dist < threatDist * 1.5 )
 					{
 						list.Insert( AI_NearNode_t(newID, dist) );
-					}
-					
-					float threatDistToNear = (vThreatPos - vNearPos).LengthSqr();
-					// If the distance from the threat to the node is closer than the distance from the threat to me, use the node.
-					// If the distance from me to the node is closer than the distance from me to the threat, use the node.
-					if (  ( ( dist < threatDistToNear ) ) && ( threatDist < threatDistToNear ) && m_bIsAdvancing)
-					{
-						list.Insert( AI_NearNode_t(newID, threatDist) );
 					}
 				}
 				// mark visited
 				wasVisited.Set(newID);
 			}
 		}
+	}
+	
+	DevMsg("Node Is %i\n", iIdealNode );
+	
+	if ( iIdealNode != NULL )
+	{
+		// Don't let anyone else use this node for a while
+		CAI_Node *pIdealNode = GetNetwork()->GetNode(iIdealNode);
+		pIdealNode->Lock( 1.0 );
+
+		if ( pIdealNode->GetHint() && ( pIdealNode->GetHint()->HintType() == HINT_TACTICAL_COVER_MED || pIdealNode->GetHint()->HintType() == HINT_TACTICAL_COVER_LOW ) )
+		{
+			if ( GetOuter()->GetHintNode() )
+			{
+				GetOuter()->GetHintNode()->Unlock(GetOuter()->GetHintDelay(GetOuter()->GetHintNode()->HintType()));
+				GetOuter()->SetHintNode( NULL );
+			}
+
+			GetOuter()->SetHintNode( pIdealNode->GetHint() );
+		}
+		return iIdealNode;
 	}
 
 	// We failed.  Not cover node was found
@@ -530,7 +560,7 @@ int CAI_TacticalServices::FindCoverNode(const Vector &vNearPos, const Vector &vT
 // Output :	int				- ID number of node that meets qualifications
 //-------------------------------------
 
-int CAI_TacticalServices::FindLosNode(const Vector &vThreatPos, const Vector &vThreatEyePos, float flMinThreatDist, float flMaxThreatDist, float flBlockTime, FlankType_t eFlankType, const Vector &vecFlankRefPos, float flFlankParam )
+int CAI_TacticalServices::FindLosNode( const Vector &vThreatPos, const Vector &vThreatEyePos, float flMinThreatDist, float flMaxThreatDist, float flBlockTime, FlankType_t eFlankType, const Vector &vecFlankRefPos, float flFlankParam )
 {
 	if ( !CAI_NetworkManager::NetworksLoaded() )
 		return NO_NODE;

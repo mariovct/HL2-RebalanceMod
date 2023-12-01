@@ -410,9 +410,6 @@ enum sharedtasks_e
 		
 		// Find a place to go that can't see to where I am now and where the enemy is now.
 		TASK_FIND_COVER_FROM_ORIGIN_AND_ENEMY,
-		
-		// Fine a place to hide towards the enemy.
-		TASK_FIND_ADVANCING_COVER_TO_ENEMY,
 
 		// Find a place to go that can't see to where I am now.
 		TASK_FIND_COVER_FROM_ORIGIN,
@@ -422,6 +419,9 @@ enum sharedtasks_e
 		
 		// Find a place to go that can't see to where I am now outside a specfied distance.
 		TASK_FIND_FAR_COVER_FROM_ORIGIN,
+		
+		// Find cover that nearest to our weapons ideal range.
+		TASK_FIND_COVER_FROM_ENEMY_IN_WEAPON_RANGE,
 		
 		// Unhook from the AI system.
 		TASK_DIE,

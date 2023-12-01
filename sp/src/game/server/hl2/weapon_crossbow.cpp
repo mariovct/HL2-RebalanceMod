@@ -25,6 +25,7 @@
 #include "gamestats.h"
 #include "decals.h"
 #include "func_break.h"
+#include "soundenvelope.h"
 
 #ifdef PORTAL
 	#include "portal_util_shared.h"
@@ -46,12 +47,12 @@ ConVar sk_npc_head_crossbow("sk_npc_head_crossbow", "3" );
 ConVar sk_crossbow_air_velocity("sk_crossbow_air_velocity", "2500" ); //2500
 ConVar sk_crossbow_water_velocity("sk_crossbow_water_velocity", "1500" ); //1500
 
-ConVar sk_crossbow_ignite_enemies("sk_crossbow_ignite_enemies", "1" ); //1500
-
 void TE_StickyBolt( IRecipientFilter& filter, float delay,	Vector vecDirection, const Vector *origin );
 
 #define	BOLT_SKIN_NORMAL	0
 #define BOLT_SKIN_GLOW		1
+
+#define CHARGE_TIME 2.5f
 
 //-----------------------------------------------------------------------------
 // Crossbow Bolt
@@ -73,13 +74,14 @@ public:
 	void BoltTouch( CBaseEntity *pOther );
 	bool CreateVPhysics( void );
 	unsigned int PhysicsSolidMaskForEntity() const;
-	static CCrossbowBolt *BoltCreate( const Vector &vecOrigin, const QAngle &angAngles, CBasePlayer *pentOwner = NULL );
+	static CCrossbowBolt *BoltCreate( const Vector &vecOrigin, const QAngle &angAngles, CBasePlayer *pentOwner = NULL, float flChargePerc = 0.0f );
 
 protected:
 
 	bool	CreateSprites( void );
 
 	CHandle<CSprite>		m_pGlowSprite;
+	float					m_flChargePerc;
 	//CHandle<CSpriteTrail>	m_pGlowTrail;
 
 	DECLARE_DATADESC();
@@ -94,6 +96,7 @@ BEGIN_DATADESC( CCrossbowBolt )
 
 	// These are recreated on reload, they don't need storage
 	DEFINE_FIELD( m_pGlowSprite, FIELD_EHANDLE ),
+	DEFINE_FIELD( m_flChargePerc, FIELD_FLOAT ),
 	//DEFINE_FIELD( m_pGlowTrail, FIELD_EHANDLE ),
 
 END_DATADESC()
@@ -101,7 +104,7 @@ END_DATADESC()
 IMPLEMENT_SERVERCLASS_ST( CCrossbowBolt, DT_CrossbowBolt )
 END_SEND_TABLE()
 
-CCrossbowBolt *CCrossbowBolt::BoltCreate( const Vector &vecOrigin, const QAngle &angAngles, CBasePlayer *pentOwner )
+CCrossbowBolt *CCrossbowBolt::BoltCreate( const Vector &vecOrigin, const QAngle &angAngles, CBasePlayer *pentOwner, float flChargePerc )
 {
 	// Create a new entity with CCrossbowBolt private data
 	CCrossbowBolt *pBolt = (CCrossbowBolt *)CreateEntityByName( "crossbow_bolt" );
@@ -109,6 +112,7 @@ CCrossbowBolt *CCrossbowBolt::BoltCreate( const Vector &vecOrigin, const QAngle 
 	pBolt->SetAbsAngles( angAngles );
 	pBolt->Spawn();
 	pBolt->SetOwnerEntity( pentOwner );
+	pBolt->m_flChargePerc = flChargePerc;
 
 	return pBolt;
 }
@@ -199,6 +203,8 @@ void CCrossbowBolt::Precache( void )
 	PrecacheModel( "models/crossbow_bolt.mdl" );
 
 	PrecacheModel( "sprites/light_glow02_noz.vmt" );
+	
+	PrecacheScriptSound("Weapon_Crossbow.ChargeLoop");
 }
 
 //-----------------------------------------------------------------------------
@@ -260,7 +266,7 @@ void CCrossbowBolt::BoltTouch( CBaseEntity *pOther )
 			// Does the target even have bones?
 			if (iClosestBone != -1)
 			{
-				// Compare the hit bone with the head bone. If we have a hit, deal headshot damage.
+ 				// Compare the hit bone with the head bone. If we have a hit, deal headshot damage.
 				bool iHead = 
 				iClosestBone == pOtherAnimating->LookupBone( "ValveBiped.Bip01_Head1" ) ||
 				iClosestBone == pOtherAnimating->LookupBone( "ValveBiped.Bip01_Spine4" ) ||
@@ -299,7 +305,7 @@ void CCrossbowBolt::BoltTouch( CBaseEntity *pOther )
 					m_flDamage *= sk_npc_head_crossbow.GetFloat();
 				}
 				
-				DevMsg("iClosestBone (%i)\n", iClosestBone );
+				//DevMsg("iClosestBone (%i)\n", iClosestBone );
 				
 				tr.physicsbone = pOtherAnimating->GetPhysicsBone(iClosestBone);
 			}
@@ -307,7 +313,9 @@ void CCrossbowBolt::BoltTouch( CBaseEntity *pOther )
 
 		if( GetOwnerEntity() && GetOwnerEntity()->IsPlayer() && pOther->IsNPC() )
 		{
-			CTakeDamageInfo	dmgInfo( this, GetOwnerEntity(), m_flDamage, DMG_BULLET | DMG_NEVERGIB );
+			// Multiply damage by our charge percentage.
+			CTakeDamageInfo	dmgInfo( this, GetOwnerEntity(), m_flDamage * m_flChargePerc, DMG_BULLET | DMG_NEVERGIB );
+			
 			dmgInfo.AdjustPlayerDamageInflictedForSkillLevel();
 			CalculateMeleeDamageForce( &dmgInfo, vecNormalizedVel, tr.endpos, 0.7f );
 			dmgInfo.SetDamagePosition( tr.endpos );
@@ -317,12 +325,10 @@ void CCrossbowBolt::BoltTouch( CBaseEntity *pOther )
 			
 			pAnim = dynamic_cast<CBaseAnimating*>(pOther);
 			
-			if ( sk_crossbow_ignite_enemies.GetBool() )
+			// Only ignite at full charge.
+			if( pAnim && m_flChargePerc >= 1.0 )
 			{
-				if( pAnim )
-				{
-					pAnim->Ignite( 30.0f );
-				}
+				pAnim->Ignite( 30.0f );
 			}
 
 			CBasePlayer *pPlayer = ToBasePlayer( GetOwnerEntity() );
@@ -540,7 +546,8 @@ public:
 	
 	bool	ShouldDisplayHUDHint() { return true; }
 
-
+	CNetworkVar( float, m_flCharge );
+	
 	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
 
@@ -552,7 +559,9 @@ private:
 	void	FireBolt( void );
 	void	ToggleZoom( void );
 	void    ReloadAnimSpeed( void );
-	//void    DisCharge( void );
+	void    DoChargedFire( void );
+	void 	SetLoopingSounds( bool bState );
+	CSoundPatch *GetChargeSound( void );
 	
 	// Various states for the crossbow's charger
 	enum ChargerState_t
@@ -565,7 +574,7 @@ private:
 	};
 
 	void	CreateChargerEffects( void );
-	void	SetChargerState( ChargerState_t state );
+	void	SetChargerState( ChargerState_t state, bool bRepeat );
 	void	DoLoadEffect( void );
 
 private:
@@ -576,7 +585,10 @@ private:
 
 	bool				m_bInZoom;
 	bool				m_bMustReload;
-	float               m_flChargeTime;
+	bool				m_bIsCharging;
+	float				m_flChargeTime;
+	
+	CSoundPatch			*m_sndCharge;		// Charging sounds
 };
 
 LINK_ENTITY_TO_CLASS( weapon_crossbow, CWeaponCrossbow );
@@ -584,14 +596,19 @@ LINK_ENTITY_TO_CLASS( weapon_crossbow, CWeaponCrossbow );
 PRECACHE_WEAPON_REGISTER( weapon_crossbow );
 
 IMPLEMENT_SERVERCLASS_ST( CWeaponCrossbow, DT_WeaponCrossbow )
+SendPropFloat( SENDINFO( m_flCharge ) ),
 END_SEND_TABLE()
 
 BEGIN_DATADESC( CWeaponCrossbow )
 
 	DEFINE_FIELD( m_bInZoom,		FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bMustReload,	FIELD_BOOLEAN ),
+	DEFINE_FIELD( m_bIsCharging,	FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_nChargeState,	FIELD_INTEGER ),
+	DEFINE_FIELD( m_flCharge, 		FIELD_FLOAT ),
+	DEFINE_FIELD( m_flChargeTime, 	FIELD_TIME ),
 	DEFINE_FIELD( m_hChargerSprite,	FIELD_EHANDLE ),
+	DEFINE_SOUNDPATCH( m_sndCharge ),
 
 END_DATADESC()
 
@@ -605,6 +622,7 @@ CWeaponCrossbow::CWeaponCrossbow( void )
 	m_bAltFiresUnderwater = true;
 	m_bInZoom			= false;
 	m_bMustReload		= false;
+	m_bIsCharging		= false;
 }
 
 #define	CROSSBOW_GLOW_SPRITE	"sprites/light_glow02_noz.vmt"
@@ -632,20 +650,16 @@ void CWeaponCrossbow::Precache( void )
 //-----------------------------------------------------------------------------
 void CWeaponCrossbow::PrimaryAttack( void )
 {
-	SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration( ACT_VM_PRIMARYATTACK ) + 1 );
+	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
+    if ( !pPlayer )
+		return;
 	
-	FireBolt();
+	if ( m_bIsCharging )
+		return;
 	
-    // Signal a reload
-	m_bMustReload = true;
-
-
-    CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
-    if ( pPlayer )
-    {
-    	m_iPrimaryAttacks++;
-    	gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
-    }
+	// Start charging, if we can.
+	m_bIsCharging = true;
+	m_flChargeTime = gpGlobals->curtime;
 }
 
 //-----------------------------------------------------------------------------
@@ -706,6 +720,8 @@ void CWeaponCrossbow::ItemPostFrame( void )//bookmark
 	{
 		Reload();
 	}
+	
+	DoChargedFire();
 
 	BaseClass::ItemPostFrame();
 }
@@ -759,7 +775,17 @@ void CWeaponCrossbow::FireBolt( void )
 	}
 #endif
 
-	CCrossbowBolt *pBolt = CCrossbowBolt::BoltCreate( vecSrc, angAiming, pOwner );
+	float flChargeRatio = CHARGE_TIME / 3.0f;
+	
+	// Only start increasing damage after 1/3 of the max charge time has occurred.
+	float flChargeTime = MAX( gpGlobals->curtime - ( m_flChargeTime + flChargeRatio ), 0.0f );
+	
+	// Start at 25% damage and increase to 100% at full charge.
+	float flChargePerc = RemapValClamped( flChargeTime, 0.0f, CHARGE_TIME - flChargeRatio, 0.25f, 1.0 );
+	
+	//DevMsg("Damage is: %f\n", sk_plr_dmg_crossbow.GetFloat() * flChargePerc );
+
+	CCrossbowBolt *pBolt = CCrossbowBolt::BoltCreate( vecSrc, angAiming, pOwner, flChargePerc );
 
 	if ( pOwner->GetWaterLevel() == 3 )
 	{
@@ -800,8 +826,8 @@ void CWeaponCrossbow::FireBolt( void )
 
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack	= gpGlobals->curtime + 0.75;
 
-	DoLoadEffect();
-	SetChargerState( CHARGER_STATE_DISCHARGE );
+	//DoLoadEffect();
+	SetChargerState( CHARGER_STATE_OFF, false );
 }
 
 //-----------------------------------------------------------------------------
@@ -814,8 +840,9 @@ bool CWeaponCrossbow::Deploy( void )
 	{
 		return DefaultDeploy( (char*)GetViewModel(), (char*)GetWorldModel(), ACT_CROSSBOW_DRAW_UNLOADED, (char*)GetAnimPrefix() );
 	}
-
+	
 	SetSkin( BOLT_SKIN_GLOW );
+	SetChargerState( CHARGER_STATE_OFF, false );
 
 	return BaseClass::Deploy();
 }
@@ -828,6 +855,12 @@ bool CWeaponCrossbow::Deploy( void )
 bool CWeaponCrossbow::Holster( CBaseCombatWeapon *pSwitchingTo )
 {
 	StopEffects();
+	
+	m_bIsCharging = false;
+	SetLoopingSounds( false );
+	
+	m_flCharge = 0.0;
+	
 	return BaseClass::Holster( pSwitchingTo );
 }
 
@@ -940,13 +973,13 @@ void CWeaponCrossbow::DoLoadEffect( void )
 // Purpose: 
 // Input  : state - 
 //-----------------------------------------------------------------------------
-void CWeaponCrossbow::SetChargerState( ChargerState_t state )
+void CWeaponCrossbow::SetChargerState( ChargerState_t state, bool bRepeat )
 {
 	// Make sure we're setup
 	CreateChargerEffects();
 
-	// Don't do this twice
-	if ( state == m_nChargeState )
+	// Don't do this twice(unless told otherwise)
+	if ( state == m_nChargeState && !bRepeat )
 		return;
 
 	m_nChargeState = state;
@@ -967,8 +1000,10 @@ void CWeaponCrossbow::SetChargerState( ChargerState_t state )
 			if ( m_hChargerSprite == NULL )
 				break;
 			
-			m_hChargerSprite->SetBrightness( 32, 0.5f );
-			m_hChargerSprite->SetScale( 0.025f, 0.5f );
+			float flCharge = RemapValClamped( gpGlobals->curtime - m_flChargeTime, 0.0f, CHARGE_TIME, 0.0f, 1.0f );
+			
+			m_hChargerSprite->SetBrightness( 80 * flCharge, 0.5f );
+			m_hChargerSprite->SetScale( 0.1f * flCharge, 0.5f );
 			m_hChargerSprite->TurnOn();
 		}
 
@@ -981,7 +1016,7 @@ void CWeaponCrossbow::SetChargerState( ChargerState_t state )
 				break;
 			
 			m_hChargerSprite->SetBrightness( 80, 1.0f );
-			m_hChargerSprite->SetScale( 0.1f, 0.5f );
+			m_hChargerSprite->SetScale( 0.2f, 0.5f );
 			m_hChargerSprite->TurnOn();
 		}
 
@@ -1002,7 +1037,7 @@ void CWeaponCrossbow::SetChargerState( ChargerState_t state )
 
 	case CHARGER_STATE_OFF:
 		{
-			SetSkin( BOLT_SKIN_NORMAL );
+		//	SetSkin( BOLT_SKIN_NORMAL );
 
 			if ( m_hChargerSprite == NULL )
 				break;
@@ -1016,7 +1051,95 @@ void CWeaponCrossbow::SetChargerState( ChargerState_t state )
 		break;
 	}
 }
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CWeaponCrossbow::DoChargedFire( void )
+{
+	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
+    if ( !pPlayer )
+		return;
+	
+	// Handle weapon firing here, because we need to detect when IN_ATTACK is released.
+	if ( pPlayer->m_afButtonReleased & IN_ATTACK && m_bIsCharging )
+	{
+		m_bIsCharging = false;
+		SetLoopingSounds( false );
+		SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration( ACT_VM_PRIMARYATTACK ) + 1 );
+		
+		FireBolt();
+			
+		// Signal a reload
+		m_bMustReload = true;
 
+		m_iPrimaryAttacks++;
+		gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
+	}
+	
+	// Charge effects.
+	float flCharge = 0.0f;
+	if ( m_bIsCharging )
+	{
+		flCharge = RemapValClamped( gpGlobals->curtime - m_flChargeTime, 0.0f, CHARGE_TIME, 0.0f, 25 );
+		
+		if ( flCharge >= 25 )
+		{
+			SetChargerState( CHARGER_STATE_START_LOAD, false );
+		}
+		else
+		{
+			// Update our charge sprites until at full charge
+			SetChargerState( CHARGER_STATE_START_CHARGE, true );
+		}
+		
+		// Update our sounds
+		SetLoopingSounds( true );
+	}
+	
+	m_flCharge = flCharge;
+}
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void CWeaponCrossbow::SetLoopingSounds( bool bState )
+{
+	if ( !GetChargeSound() )
+		return;
+	
+	// Play the charging sounds!
+	if ( bState )
+	{
+		
+		// Makes the sound pitch reflect how damage is calculated.
+		float flChargeRatio = CHARGE_TIME / 3.0f;
+		float flChargeTime = MAX( gpGlobals->curtime - ( m_flChargeTime + flChargeRatio ), 0.0f );
+		
+		float ChargePerc = RemapValClamped( flChargeTime, 0.0f, CHARGE_TIME - flChargeRatio, 0.4f, 1.0f );
+		
+		(CSoundEnvelopeController::GetController()).SoundChangePitch( GetChargeSound(), 250 * ChargePerc, 0.1f );
+		(CSoundEnvelopeController::GetController()).SoundChangeVolume( GetChargeSound(), 1.5, 0.1f );
+		return;
+	}
+	
+	// Fade it out if desired
+	(CSoundEnvelopeController::GetController()).SoundFadeOut( GetChargeSound(), 0.1f );
+	m_sndCharge = NULL;
+}
+//-----------------------------------------------------------------------------
+// Purpose: 
+// Output : CSoundPatch
+//-----------------------------------------------------------------------------
+CSoundPatch *CWeaponCrossbow::GetChargeSound( void )
+{
+	if ( m_sndCharge == NULL )
+	{
+		CPASAttenuationFilter filter( this );
+		m_sndCharge = (CSoundEnvelopeController::GetController()).SoundCreate( filter, entindex(), CHAN_STATIC, "Weapon_Crossbow.ChargeLoop", ATTN_NORM );
+		(CSoundEnvelopeController::GetController()).Play( GetChargeSound(), 0.0f, 50 );
+	}
+
+	return m_sndCharge;
+}
 //-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : *pEvent - 
@@ -1024,24 +1147,7 @@ void CWeaponCrossbow::SetChargerState( ChargerState_t state )
 //-----------------------------------------------------------------------------
 void CWeaponCrossbow::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator )
 {
-	switch( pEvent->event )
-	{
-	case EVENT_WEAPON_THROW:
-		SetChargerState( CHARGER_STATE_START_LOAD );
-		break;
-
-	case EVENT_WEAPON_THROW2:
-		SetChargerState( CHARGER_STATE_START_CHARGE );
-		break;
-	
-	case EVENT_WEAPON_THROW3:
-		SetChargerState( CHARGER_STATE_READY );
-		break;
-
-	default:
-		BaseClass::Operator_HandleAnimEvent( pEvent, pOperator );
-		break;
-	}
+	BaseClass::Operator_HandleAnimEvent( pEvent, pOperator );
 }
 
 //-----------------------------------------------------------------------------
@@ -1074,7 +1180,7 @@ void CWeaponCrossbow::StopEffects( void )
 	}
 
 	// Turn off our sprites
-	SetChargerState( CHARGER_STATE_OFF );
+	SetChargerState( CHARGER_STATE_OFF, false );
 }
 
 //-----------------------------------------------------------------------------

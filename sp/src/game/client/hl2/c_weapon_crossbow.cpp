@@ -157,3 +157,77 @@ void CrosshairLoadCallback( const CEffectData &data )
 }
 
 DECLARE_CLIENT_EFFECT( "CrossbowLoad", CrosshairLoadCallback );
+
+#include "c_weapon__stubs.h"
+#include "functionproxy.h"
+#include "c_basehlcombatweapon.h"
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+
+class C_WeaponCrossbow : public C_BaseHLCombatWeapon
+{
+	DECLARE_CLASS( C_WeaponCrossbow, C_BaseHLCombatWeapon );
+public:
+	C_WeaponCrossbow() {}
+
+	DECLARE_CLIENTCLASS();
+	DECLARE_PREDICTABLE();
+
+	float GetCharge() const { return (float)m_flCharge; }
+
+private:
+	C_WeaponCrossbow( const C_WeaponCrossbow &other ) {}
+	float m_flCharge;
+};
+
+
+STUB_WEAPON_CLASS_IMPLEMENT( weapon_crossbow, C_WeaponCrossbow );
+
+IMPLEMENT_CLIENTCLASS_DT( C_WeaponCrossbow, DT_WeaponCrossbow, CWeaponCrossbow )
+	RecvPropFloat( RECVINFO( m_flCharge ) ),
+END_RECV_TABLE()
+
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+
+class CBoltGlowProxy : public CResultProxy
+{
+public:
+	bool Init( IMaterial *pMaterial, KeyValues *pKeyValues );
+	void OnBind( void *pC_BaseEntity  );
+};
+
+bool CBoltGlowProxy::Init( IMaterial *pMaterial, KeyValues *pKeyValues )
+{
+	if (!CResultProxy::Init( pMaterial, pKeyValues ))
+		return false;
+	
+	return true;
+}
+
+void CBoltGlowProxy::OnBind( void *pC_BaseEntity )
+{
+	if (!pC_BaseEntity)
+		return;
+	
+	C_BasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
+	if ( !pPlayer )
+		return;
+	
+	C_BaseCombatWeapon *pWeapon = pPlayer->GetActiveWeapon();
+	if ( !pWeapon )
+		return;
+	
+	C_WeaponCrossbow *pCrossbow = dynamic_cast<C_WeaponCrossbow*>( pWeapon );
+	if ( !pCrossbow )
+		return;
+	
+	Assert( m_pResult );
+	m_pResult->SetFloatValue( (float)pCrossbow->GetCharge() );
+}
+
+EXPOSE_INTERFACE( CBoltGlowProxy, IMaterialProxy, "BoltGlow" IMATERIAL_PROXY_INTERFACE_VERSION );
+

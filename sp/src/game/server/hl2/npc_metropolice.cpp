@@ -4463,25 +4463,25 @@ int CNPC_MetroPolice::TranslateSchedule( int scheduleType )
 		}
 		
 		// Random schedules.
-	//	switch( random->RandomInt(0,1) )
-	//		{
-	//		case 0:	
+/* 		switch( random->RandomInt(0,1) )
+			{
+			case 0:	 */
 				return SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE;
-	//			break;
+/* 				break;
 				
-	//		case 1:	
-	//			return SCHED_METROPOLICE_FLANK_ENEMY;
-	//			break;
+			case 1:	
+				return SCHED_METROPOLICE_FLANK_ENEMY;
+				break;
 				
-/* 			case 2:	
+ 			case 2:	
 				// Don't overwatch if we didn't recently see our enemy!
 				AI_EnemyInfo_t *pMemory = GetEnemies()->Find( GetEnemy() );
 				if ( pMemory && GetEnemyLastTimeSeen() > ( gpGlobals->curtime - 5.0 ) )
 				{
 					return SCHED_ENTER_OVERWATCH;
 				}
-				break; */
-	//		}
+				break; 
+			} */
 		break;
 		
 	case SCHED_WAKE_ANGRY:
@@ -4924,7 +4924,10 @@ void CNPC_MetroPolice::StartTask( const Task_t *pTask )
 		break;
 		
 	case TASK_RANGE_ATTACK1:
+		m_flShotDelay = GetActiveWeapon()->GetFireRate();
 		ResetIdealActivity( ACT_RANGE_ATTACK1 );
+
+		m_flNextAttack = gpGlobals->curtime + m_flShotDelay;
 		break; 
 
 	default:
@@ -5142,7 +5145,7 @@ void CNPC_MetroPolice::RunTask( const Task_t *pTask )
 				GetMotor()->SetIdealYawAndUpdate( GetMotor()->GetIdealYaw(), AI_KEEP_YAW_SPEED );
 			}
 
-			if ( gpGlobals->curtime >= m_flNextAttack )
+			if ( gpGlobals->curtime >= m_flNextAttack && !GetShotRegulator()->IsInRestInterval() )
 			{
 				if ( IsActivityFinished() )
 				{
@@ -5155,6 +5158,7 @@ void CNPC_MetroPolice::RunTask( const Task_t *pTask )
 						UpdateLeadScale( GetActiveWeapon() );
 						OnRangeAttack1();
 						ResetIdealActivity( ACT_RANGE_ATTACK1 );
+						m_flNextAttack = gpGlobals->curtime + m_flShotDelay;
 					}
 				}
 			}
@@ -5382,7 +5386,7 @@ void CNPC_MetroPolice::GatherConditions( void )
 		// slot. If they do not select an attack schedule, then they'll release the slot.
 		
 		// Make sure we're fully loaded before trying to poll.
-		if ( GetActiveWeapon() && GetActiveWeapon()->m_iClip1 < GetActiveWeapon()->GetMaxClip1() * 0.85 )
+		/* if ( GetActiveWeapon() && GetActiveWeapon()->m_iClip1 < GetActiveWeapon()->GetMaxClip1() * 0.85 )
 		{
 			if ( !HasCondition( COND_LOW_PRIMARY_AMMO ) )
 			{
@@ -5390,7 +5394,7 @@ void CNPC_MetroPolice::GatherConditions( void )
 				SetCondition( COND_LOW_PRIMARY_AMMO );
 			}
 		}
-		if( TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) )
+		else*/ if( TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) )
 		{
 			SetCondition( COND_ATTACK_SLOT_AVAILABLE );
 		}
@@ -6572,7 +6576,7 @@ DEFINE_SCHEDULE
 
 	"	Tasks"
 	"		TASK_SET_FAIL_SCHEDULE			SCHEDULE:SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY"
-	"		TASK_FIND_COVER_FROM_ENEMY		0"
+	"		TASK_FIND_COVER_FROM_ENEMY_IN_WEAPON_RANGE		0"
 	"		TASK_RUN_PATH					0"
 	"		TASK_WAIT_FOR_MOVEMENT			0"
 	"		TASK_REMEMBER					MEMORY:INCOVER"
@@ -6598,7 +6602,7 @@ DEFINE_SCHEDULE
 
 	"	Tasks"
 	"		TASK_SET_FAIL_SCHEDULE		SCHEDULE:SCHED_RELOAD"
-	"		TASK_FIND_COVER_FROM_ENEMY	0"
+	"		TASK_FIND_COVER_FROM_ENEMY_IN_WEAPON_RANGE	0"
 	"		TASK_RUN_PATH				0"
 	"		TASK_WAIT_FOR_MOVEMENT		0"
 	"		TASK_REMEMBER				MEMORY:INCOVER"

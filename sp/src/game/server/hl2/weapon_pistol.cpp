@@ -81,12 +81,12 @@ public:
 		return cone;
 	}
 	
-	virtual int	GetMinBurst(){ return 4;}
+	virtual int	GetMinBurst(){ return 2;}
 
-	virtual int	GetMaxBurst(){ return 7;}
+	virtual int	GetMaxBurst(){ return 4;}
 	
-	virtual float	GetMinRestTime(){ return 0.1; };
-	virtual float	GetMaxRestTime(){ return 0.3; };
+	virtual float	GetMinRestTime(){ return 0.6; };
+	virtual float	GetMaxRestTime(){ return 1.0; };
 
 	virtual float GetFireRate( void ) 
 	{
@@ -480,7 +480,7 @@ void CWeaponPistol::AddViewKick( void )
 	viewPunch.y = random->RandomFloat( -0.1f,  0.1f );
 	viewPunch.z = 0.0f;
 	
-/* 	//Find how far into our accuracy degradation we are
+/*  	//Find how far into our accuracy degradation we are
 	float limit = 10;
 	float scale = 3.5;
 	
@@ -488,7 +488,7 @@ void CWeaponPistol::AddViewKick( void )
 	float kickPerc = duration / (limit / scale);
 	
 	viewPunch.x *= (1.0f + kickPerc);
-	viewPunch.y *= (1.0f + kickPerc); */
+	viewPunch.y *= (1.0f + kickPerc);  */
 	
 	if ( sk_alternate_recoil.GetBool() )
 	{

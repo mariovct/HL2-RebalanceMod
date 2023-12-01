@@ -566,6 +566,7 @@ public:
 	int						GetIdealSequence( void ) { return m_nIdealSequence; }
 
 	bool					SetIdealActivity( Activity ideal );
+	virtual float			GetActivityAnimSpeed( Activity ideal );
 	void					MaintainIdealActivity( void );
 
 private:

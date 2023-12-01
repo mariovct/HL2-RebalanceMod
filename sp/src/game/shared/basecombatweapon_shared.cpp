@@ -1438,6 +1438,7 @@ bool CBaseCombatWeapon::DefaultDeploy( char *szViewModel, char *szWeaponModel, i
 	m_flHudHintPollTime = gpGlobals->curtime + 5.0f;
 	
 	WeaponSound( DEPLOY );
+	ResetFireDuration();
 
 	SetWeaponVisible( true );
 
@@ -1788,7 +1789,6 @@ void CBaseCombatWeapon::ItemPostFrame( void )
 	{
 		// reload when reload is pressed, or if no buttons are down and weapon is empty.
 		Reload();
-		ResetFireDuration();
 	}
 
 	// -----------------------
@@ -2216,6 +2216,9 @@ void CBaseCombatWeapon::FinishReload( void )
 		{
 			m_bInReload = false;
 		}
+		
+		// Reset our fire duration
+		ResetFireDuration();
 	}
 }
 
@@ -2401,8 +2404,7 @@ bool CBaseCombatWeapon::SetIdealActivity( Activity ideal )
 	//Find the next sequence in the potential chain of sequences leading to our ideal one
 	int nextSequence = FindTransitionSequence( GetSequence(), m_nIdealSequence, NULL );
 	
-	// Makes deploying a little faster.
-	m_flPlaybackRate = ideal == ACT_VM_DRAW ? deployspeedmult.GetFloat() : 1.0;
+	m_flPlaybackRate = GetActivityAnimSpeed(ideal);
 
 	// Don't use transitions when we're deploying
 	if ( ideal != ACT_VM_DRAW && IsWeaponVisible() && nextSequence != m_nIdealSequence )
@@ -2423,6 +2425,19 @@ bool CBaseCombatWeapon::SetIdealActivity( Activity ideal )
 	//Set the next time the weapon will idle
 	SetWeaponIdleTime( gpGlobals->curtime + SequenceDuration() );
 	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Sets the weapons animation speed based off of our current activity
+// Input  : ideal - our current activity
+//-----------------------------------------------------------------------------
+float CBaseCombatWeapon::GetActivityAnimSpeed( Activity ideal )
+{
+	// Global deploy speed modifier
+	if ( ideal == ACT_VM_DRAW )
+		return deployspeedmult.GetFloat();
+	
+	return 1.0;
 }
 
 //-----------------------------------------------------------------------------
@@ -2472,8 +2487,19 @@ void CBaseCombatWeapon::ResetFireDuration( void )
 //-----------------------------------------------------------------------------
 void CBaseCombatWeapon::SetFireDuration( void )
 {
-	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
-	m_fFireDuration = ( pOwner->m_nButtons & IN_ATTACK ) ? ( m_fFireDuration + gpGlobals->frametime ) : 0.0f;
+//	float m_fLastFireDuration = m_fFireDuration;
+	
+	m_fFireDuration = ( m_flNextPrimaryAttack >= gpGlobals->curtime - 0.1 ) ? 
+	
+	( m_fFireDuration + gpGlobals->frametime ) : 
+	( m_fFireDuration - 50.0f * gpGlobals->frametime );
+	
+	m_fFireDuration = m_fFireDuration < 0.005 ? 0 : m_fFireDuration;
+	
+/* 	if ( m_fLastFireDuration != m_fFireDuration )
+	{
+		DevMsg("FireDuration is: %f\n", m_fFireDuration );
+	} */
 }
 //-----------------------------------------------------------------------------
 // Purpose:

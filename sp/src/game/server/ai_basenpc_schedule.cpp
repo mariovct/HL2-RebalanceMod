@@ -987,6 +987,43 @@ bool CAI_BaseNPC::FindCoverFromEnemy( bool bNodesOnly, float flMinDistance, floa
 	return true;
 }
 
+//-----------------------------------------------------------------------------
+
+bool CAI_BaseNPC::FindCoverFromEnemyInRange( float flMinDistance, float flMaxDistance )
+{
+	CBaseEntity *pEntity = GetEnemy();
+
+	// Find cover from self if no enemy available
+	if ( pEntity == NULL )
+		pEntity = this;
+
+	Vector coverPos = vec3_invalid;
+
+	ClearHintNode();
+	
+	if ( flMaxDistance == FLT_MAX )
+		flMaxDistance = CoverRadius();
+	
+	float flDesiredDist = (flMinDistance + flMaxDistance) / 2;
+		
+	if ( !GetTacticalServices()->FindCoverPos( GetLocalOrigin(), pEntity->GetAbsOrigin(), pEntity->EyePosition(), flMinDistance, flMaxDistance, &coverPos, flDesiredDist ) )
+		return false;
+
+	AI_NavGoal_t goal( GOALTYPE_COVER, coverPos, ACT_RUN, AIN_HULL_TOLERANCE );
+
+	if ( !GetNavigator()->SetGoal( goal ) )
+		return false;
+		
+	// FIXME: add to goal
+	if (GetHintNode())
+	{
+		GetNavigator()->SetArrivalActivity( GetCoverActivity( GetHintNode() ) );
+		GetNavigator()->SetArrivalDirection( GetHintNode()->GetDirection() );
+	}
+	
+	return true;
+}
+
 
 //-----------------------------------------------------------------------------
 // TASK_FIND_COVER_FROM_BEST_SOUND
@@ -1531,55 +1568,21 @@ void CAI_BaseNPC::StartTask( const Task_t *pTask )
 
 		break;
 		
-	case TASK_FIND_COVER_FROM_ORIGIN_AND_ENEMY:
+	case TASK_FIND_COVER_FROM_ENEMY_IN_WEAPON_RANGE:
 		{
 			float 	flMinDistance 	= 0.0;
 			float 	flMaxDistance 	= FLT_MAX;
-			Vector coverPos;
 			
-			CBaseEntity *pEntity = GetEnemy();
-
-			// Find cover from self if no enemy available
-			if ( pEntity == NULL )
-				pEntity = this;
-
-			if ( ( GetTacticalServices()->FindCoverPos( GetLocalOrigin(), pEntity->EyePosition(), flMinDistance, flMaxDistance, &coverPos ) )  ) 
+			if ( GetActiveWeapon() )
 			{
-				AI_NavGoal_t goal(coverPos, ACT_RUN, AIN_HULL_TOLERANCE);
-				GetNavigator()->SetGoal( goal );
-
-				m_flMoveWaitFinished = gpGlobals->curtime + pTask->flTaskData;
+				flMinDistance = GetActiveWeapon()->m_fMinRange1;
+				flMaxDistance = GetActiveWeapon()->m_fMaxRange1;
 			}
+
+			if ( FindCoverFromEnemyInRange( flMinDistance, flMaxDistance ) )
+				TaskComplete();
 			else
-			{
-				// no coverwhatsoever.
-				TaskFail(FAIL_NO_COVER);
-			}
-		}
-
-		break;
-		
-	case TASK_FIND_ADVANCING_COVER_TO_ENEMY:
-		{
-			Vector coverPos;
-			CBaseEntity *pEntity = GetEnemy();
-
-		// Find cover from self if no enemy available
-		if ( pEntity == NULL )
-			pEntity = this;
-
-			if ( GetTacticalServices()->FindAdvancePos( pEntity->GetAbsOrigin(), pEntity->EyePosition(), 0, CoverRadius(), &coverPos ) ) 
-			{
-				AI_NavGoal_t goal(coverPos, ACT_RUN, AIN_HULL_TOLERANCE);
-				GetNavigator()->SetGoal( goal );
-
-				m_flMoveWaitFinished = gpGlobals->curtime + pTask->flTaskData;
-			}
-			else
-			{
-				// no coverwhatsoever.
-				TaskFail(FAIL_NO_COVER);
-			}
+				TaskFail(FAIL_NO_COVER); // no coverwhatsoever.
 		}
 
 		break;

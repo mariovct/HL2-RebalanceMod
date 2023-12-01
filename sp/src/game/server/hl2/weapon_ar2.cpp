@@ -145,11 +145,11 @@ float CWeaponAR2::GetFireRate( void )
 	{
 		return 0.14;
 	}
-	return sk_weapon_ar2_burst_fire.GetBool() ? 0.1 : 0.14;
+	return sk_weapon_ar2_burst_fire.GetBool() ? 0.09 : 0.14;
 }
 int	CWeaponAR2::GetBurstSize( void )
 {
-	return sk_weapon_ar2_burst_fire_count.GetInt();
+	return 4;
 }
 //-----------------------------------------------------------------------------
 // Purpose: Handle grenade detonate in-air (even when no ammo is left)

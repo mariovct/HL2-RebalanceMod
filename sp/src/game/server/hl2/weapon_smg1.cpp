@@ -317,8 +317,8 @@ bool CWeaponSMG1::Reload( void )
 void CWeaponSMG1::AddViewKick( void )
 {
 	#define	EASY_DAMPEN			1.0f	//			0.0
-	#define	MAX_VERTICAL_KICK	1.5f	//Degrees	4.0
-	#define	SLIDE_LIMIT			1.0f	//Seconds	8.0
+	#define	MAX_VERTICAL_KICK	3.0f	//Degrees	4.0
+	#define	SLIDE_LIMIT			3.0f	//Seconds	8.0
 	
 	//Get the view kick
 	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );

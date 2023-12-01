@@ -322,7 +322,7 @@ CAI_BaseNPC *CAI_Squad::SquadMemberGoalInRange( const Vector &vecLocation, float
 		{
 			DevMsg("2");
 			Vector VecGoalPos = m_SquadMembers[i]->GetNavigator()->GetGoalPos();
-			NDebugOverlay::Box(  VecGoalPos, Vector(10,10,10), Vector(10,10,10), 255,0,0, true, 5.0 );
+			NDebugOverlay::Box(  VecGoalPos, Vector(10,10,10), Vector(10,10,10), 255, 0, 0, 64, 10.0 );
 			
 			if (m_SquadMembers[i] != NULL && (vecLocation - VecGoalPos ).Length2D() <= flDist)
 				return m_SquadMembers[i];
