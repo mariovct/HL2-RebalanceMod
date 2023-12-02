@@ -1,10 +1,8 @@
-# HL2-RebalanceMod
-The Github repository for the HL2 mirrored compatible sourcecode of the mod.
-The download can be found [here](https://github.com/mariovct/HL2-RebalanceMod_Game-files).
-
-=============================================================
-               
-SOURCE 1 SDK LICENSE
+# HL2 Rebalanced Mirrored SourceCode
+This is the Github repository for the SourceCode of the Mirrored mod.          
+The HL2R Sourcemod can be found [here](https://github.com/mariovct/HL2-RebalanceMod_Game-files).
+     
+#### ============SOURCE 1 SDK LICENSE============
 
 Source SDK Copyright(c) Valve Corp.  
 
