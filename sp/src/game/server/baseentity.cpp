@@ -2038,7 +2038,9 @@ void CBaseEntity::UpdateOnRemove( void )
 		DevMsg( 2, "Warning: Deleting orphaned children of %s\n", GetClassname() );
 		for ( int i = childrenList.Count()-1; i >= 0; --i )
 		{
-			UTIL_Remove( childrenList[i] );
+			// MEGA HACK
+			if ( !childrenList[i]->ClassMatches( "npc_tripmine" ))
+				UTIL_Remove( childrenList[i] );
 		}
 	}
 

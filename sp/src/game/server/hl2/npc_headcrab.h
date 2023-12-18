@@ -73,6 +73,7 @@ public:
 	bool			HandleInteraction(int interactionType, void *data, CBaseCombatCharacter* sourceEnt);
 
 	void	CrawlFromCanister();
+	void	WasReleased( bool state ) { m_bWasReleased = state; }
 
 	virtual	bool		AllowedToIgnite( void ) { return true; }
 
@@ -149,6 +150,7 @@ protected:
 
 	bool	m_bHangingFromCeiling;
 	float	m_flIlluminatedTime;
+	bool	m_bWasReleased;
 };
 
 

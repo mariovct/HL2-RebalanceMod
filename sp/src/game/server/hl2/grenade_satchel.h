@@ -14,11 +14,11 @@
 #pragma once
 #endif
 
-
 #include "basegrenade_shared.h"
-#include "hl2mp/weapon_slam.h"
+#include "weapon_slam.h"
 
 class CSoundPatch;
+class CSprite;
 
 class CSatchelCharge : public CBaseGrenade
 {
@@ -28,14 +28,12 @@ public:
 	void			Spawn( void );
 	void			Precache( void );
 	void			BounceSound( void );
-	void			UpdateSlideSound( void );
-	void			KillSlideSound(void);
 	void			SatchelTouch( CBaseEntity *pOther );
 	void			SatchelThink( void );
-	void			SatchelUse( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
+	
+	// Input handlers
+	void			InputExplode( inputdata_t &inputdata );
 
-	CSoundPatch*	m_soundSlide;
-	float			m_flSlideVolume;
 	float			m_flNextBounceSoundTime;
 	bool			m_bInAir;
 	Vector			m_vLastPosition;
@@ -51,7 +49,8 @@ public:
 	DECLARE_DATADESC();
 
 private:
-	void InitSlideSound(void);
+	void				CreateEffects( void );
+	CHandle<CSprite>	m_hGlowSprite;
 };
 
 #endif	//SATCHEL_H

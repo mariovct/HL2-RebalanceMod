@@ -1074,12 +1074,17 @@ void CWeaponCrossbow::DoChargedFire( void )
 
 		m_iPrimaryAttacks++;
 		gamestats->Event_WeaponFired( pPlayer, true, GetClassname() );
+		SetSkin( BOLT_SKIN_NORMAL );
 	}
+	
+	if ( m_bMustReload )
+		return;
 	
 	// Charge effects.
 	float flCharge = 0.0f;
 	if ( m_bIsCharging )
 	{
+		SetSkin( BOLT_SKIN_GLOW );
 		flCharge = RemapValClamped( gpGlobals->curtime - m_flChargeTime, 0.0f, CHARGE_TIME, 0.0f, 25 );
 		
 		if ( flCharge >= 25 )

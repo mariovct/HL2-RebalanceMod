@@ -2569,6 +2569,7 @@ void CNPC_BaseZombie::ReleaseHeadcrab( const Vector &vecOrigin, const Vector &ve
 			pCrab->SetEnemy( pEnemy );
 			if ( IsCurSchedule( SCHED_ZOMBIE_RELEASECRAB ) )
 			{
+				pCrab->WasReleased( true );
 				pCrab->SetIdealActivity( ACT_RANGE_ATTACK1 );
 				pCrab->JumpAttack( false, pEnemy->EyePosition(), true );
 			}

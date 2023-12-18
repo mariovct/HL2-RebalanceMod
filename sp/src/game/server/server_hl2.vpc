@@ -249,6 +249,12 @@ $Project "Server (HL2)"
 			$File	"hl2\weapon_smg1.cpp"
 			$File	"hl2\weapon_stunstick.cpp"
 			$File	"hl2\weapon_stunstick.h"
+			$File	"hl2\weapon_slam.cpp"
+			$File	"hl2\weapon_slam.h"
+			$File	"hl2\grenade_tripmine.cpp"
+			$File	"hl2\grenade_tripmine.h"
+			$File	"hl2\grenade_satchel.cpp"
+			$File	"hl2\grenade_satchel.h"
 
 			$Folder	"Unused"
 			{

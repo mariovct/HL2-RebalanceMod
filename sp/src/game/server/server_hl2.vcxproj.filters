@@ -1592,6 +1592,12 @@
     <ClInclude Include="hl2\grenade_frag.h">
       <Filter>Source Files\HL2 DLL</Filter>
     </ClInclude>
+    <ClInclude Include="hl2\grenade_satchel.h">
+      <Filter>Source Files\HL2 DLL</Filter>
+    </ClInclude>
+    <ClInclude Include="hl2\grenade_tripmine.h">
+      <Filter>Source Files\HL2 DLL</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\game\shared\hl2\hl2_gamerules.h">
       <Filter>Source Files\HL2 DLL</Filter>
     </ClInclude>
@@ -1725,6 +1731,9 @@
       <Filter>Source Files\HL2 DLL</Filter>
     </ClInclude>
     <ClInclude Include="hl2\weapon_rpg.h">
+      <Filter>Source Files\HL2 DLL</Filter>
+    </ClInclude>
+    <ClInclude Include="hl2\weapon_slam.h">
       <Filter>Source Files\HL2 DLL</Filter>
     </ClInclude>
     <ClInclude Include="hl2\weapon_stunstick.h">
@@ -2956,6 +2965,12 @@
     <ClCompile Include="hl2\grenade_frag.cpp">
       <Filter>Source Files\HL2 DLL</Filter>
     </ClCompile>
+    <ClCompile Include="hl2\grenade_satchel.cpp">
+      <Filter>Source Files\HL2 DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="hl2\grenade_tripmine.cpp">
+      <Filter>Source Files\HL2 DLL</Filter>
+    </ClCompile>
     <ClCompile Include="hl2\hl2_ai_network.cpp">
       <Filter>Source Files\HL2 DLL</Filter>
     </ClCompile>
@@ -3236,6 +3251,9 @@
       <Filter>Source Files\HL2 DLL</Filter>
     </ClCompile>
     <ClCompile Include="hl2\weapon_shotgun.cpp">
+      <Filter>Source Files\HL2 DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="hl2\weapon_slam.cpp">
       <Filter>Source Files\HL2 DLL</Filter>
     </ClCompile>
     <ClCompile Include="hl2\weapon_smg1.cpp">

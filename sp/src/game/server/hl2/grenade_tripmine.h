@@ -25,8 +25,9 @@ public:
 	void Spawn( void );
 	void Precache( void );
 
+#if 0 // FIXME: OnTakeDamage_Alive() is no longer called now that base grenade derives from CBaseAnimating
 	int OnTakeDamage_Alive( const CTakeDamageInfo &info );
-	
+#endif	
 	void WarningThink( void );
 	void PowerupThink( void );
 	void BeamBreakThink( void );
@@ -35,15 +36,19 @@ public:
 
 	void MakeBeam( void );
 	void KillBeam( void );
+	bool IsValidEnemy( CBaseEntity *pEnemy );
+	
+	Vector GetFacingDirection( void );
 
 public:
 	EHANDLE		m_hOwner;
 
 private:
 	float		m_flPowerUp;
-	Vector		m_vecDir;
+	//Vector		m_vecDir;
 	Vector		m_vecEnd;
 	float		m_flBeamLength;
+	bool		m_bHasParent;
 
 	CBeam		*m_pBeam;
 	Vector		m_posOwner;

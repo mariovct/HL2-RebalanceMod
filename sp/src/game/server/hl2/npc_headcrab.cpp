@@ -215,6 +215,7 @@ BEGIN_DATADESC( CBaseHeadcrab )
 
 	DEFINE_FIELD( m_bHangingFromCeiling, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_flIlluminatedTime, FIELD_TIME ),
+	DEFINE_FIELD( m_bWasReleased, FIELD_BOOLEAN ),
 
 	DEFINE_INPUTFUNC( FIELD_VOID, "Burrow", InputBurrow ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "BurrowImmediate", InputBurrowImmediate ),
@@ -605,9 +606,17 @@ void CBaseHeadcrab::HandleAnimEvent( animevent_t *pEvent )
 {
 	if ( pEvent->event == AE_HEADCRAB_JUMPATTACK )
 	{
+		if ( m_bWasReleased )
+		{
+			m_bMidJump = true;
+			m_bWasReleased = false;
+		}
+		
 		// Ignore if we're in mid air
 		if ( m_bMidJump )
 			return;
+		
+		DevMsg("e\n");
 
 		CBaseEntity *pEnemy = GetEnemy();
 			

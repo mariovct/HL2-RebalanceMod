@@ -453,7 +453,42 @@ int CBaseCombatWeapon::GetSlot( void ) const
 //-----------------------------------------------------------------------------
 int CBaseCombatWeapon::GetPosition( void ) const
 {
-	return GetWpnData().iPosition;
+/* 	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
+	
+	if ( !pPlayer ) */
+		return GetWpnData().iPosition;
+/* 	
+	int position = 0;
+	
+	// Dynamically changes a weapons slot position based on already owned weapons.
+	for ( int i = 0; i < MAX_WEAPONS; i++ )
+	{
+		CBaseCombatWeapon *pWeapon = pPlayer->GetWeapon(i);
+		
+		if ( !pPlayer->GetWeapon(i) )
+			continue;
+		
+		DevMsg("1\n");
+		
+		if ( pWeapon->GetSlot() != GetSlot() )
+			continue;
+		
+		DevMsg("2\n");
+		
+		if ( pWeapon->GetWpnData().iPosition <= GetWpnData().iPosition )
+			continue;
+		
+		DevMsg("3\n");
+		
+		int iNewPosition = GetWpnData().iPosition - pWeapon->GetWpnData().iPosition;
+		if ( iNewPosition >= position )
+		{
+			DevMsg("4\n");
+			position = iNewPosition;
+		}
+	} 
+	
+	return position; */
 }
 
 //-----------------------------------------------------------------------------
