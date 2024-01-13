@@ -423,7 +423,7 @@ void CNPC_CScanner::Event_Killed( const CTakeDamageInfo &info )
 	if ( !m_bIsClawScanner && GetEnemy() != NULL && (info.GetDamageType() & DMG_DISSOLVE) == false )
 	{
 		Vector vecDelta = GetLocalOrigin() - GetEnemy()->GetLocalOrigin();
-		if ( ( vecDelta.z > 0 ) && ( vecDelta.Length() > 0 ) ) // 120 320
+		if ( ( vecDelta.z > 120 ) && ( vecDelta.Length() > 360 ) )
 		{	
 			// If I'm divebombing, don't take any more damage. It will make Event_Killed() be called again.
 			// This is especially bad if someone machineguns the divebombing scanner. 

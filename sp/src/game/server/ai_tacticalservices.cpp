@@ -517,7 +517,7 @@ int CAI_TacticalServices::FindCoverNode(const Vector &vNearPos, const Vector &vT
 		}
 	}
 	
-	DevMsg("Node Is %i\n", iIdealNode );
+	//DevMsg("Node Is %i\n", iIdealNode );
 	
 	if ( iIdealNode != NULL )
 	{

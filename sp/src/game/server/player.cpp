@@ -115,7 +115,7 @@ ConVar cl_backspeed( "cl_backspeed", "450", FCVAR_REPLICATED | FCVAR_CHEAT );
 
 // This is declared in the engine, too
 ConVar	sv_noclipduringpause( "sv_noclipduringpause", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "If cheats are enabled, then you can noclip with the game paused (for doing screenshots, etc.)." );
-ConVar	sk_manual_pickup( "sk_manual_pickup", "0" );
+extern ConVar manual_pickup;
 extern ConVar sv_maxunlag;
 extern ConVar sv_turbophysics;
 extern ConVar *sv_maxreplay;
@@ -6564,7 +6564,7 @@ extern bool UTIL_ItemCanBeTouchedByPlayer( CBaseEntity *pItem, CBasePlayer *pPla
 // Input  : pWeapon - the weapon that the player bumped into.
 // Output : Returns true if player picked up the weapon
 //-----------------------------------------------------------------------------
-bool CBasePlayer::BumpWeapon( CBaseCombatWeapon *pWeapon )
+bool CBasePlayer::BumpWeapon( CBaseCombatWeapon *pWeapon, bool bUsed )
 {
 	CBaseCombatCharacter *pOwner = pWeapon->GetOwner();
 
@@ -6572,15 +6572,20 @@ bool CBasePlayer::BumpWeapon( CBaseCombatWeapon *pWeapon )
 	if ( !IsAllowedToPickupWeapons() )
 		return false;
 	
-	if ( ( pWeapon->VPhysicsGetObject() && pWeapon->VPhysicsGetObject()->GetGameFlags() != FVPHYSICS_PLAYER_HELD ) && sk_manual_pickup.GetBool() )
+	CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
+	if ( manual_pickup.GetBool() && ( pPlayer && !pPlayer->IsInAVehicle() ) )
 	{
-		// Don't force manually picking up weapons if we're just starting a chapter!
-		if ( gpGlobals->curtime > 5 )
+		// Static objects cannot be held, restort to +use presses instead.
+		IPhysicsObject *pObject = pWeapon->VPhysicsGetObject();
+		if ( ( pObject && pObject->GetGameFlags() != FVPHYSICS_PLAYER_HELD ) && !bUsed )
 		{
-#ifdef HL2_DLL // Literally nobody knows that the stunstick 'can' even be picked up, just do it automatically.
+			// Don't force manually picking up items if we're just starting a chapter!
+			if ( gpGlobals->curtime > 5 )
+			{
+				// Literally nobody knows that the stunstick 'can' even be picked up, just do it automatically.
 				if ( !pWeapon->ClassMatches( "weapon_stunstick" ) )
-#endif
 					return false;
+			}
 		}
 	}
 

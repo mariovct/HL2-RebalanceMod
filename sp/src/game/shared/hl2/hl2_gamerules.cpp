@@ -70,6 +70,14 @@ IMPLEMENT_NETWORKCLASS_ALIASED( HalfLife2Proxy, DT_HalfLife2Proxy )
 
 ConVar  physcannon_mega_enabled( "physcannon_mega_enabled", "0", FCVAR_CHEAT | FCVAR_REPLICATED );
 
+// Hl2r Content
+ConVar 	realistic_reload("realistic_reload", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar 	explosive_crabs("explosive_crabs", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar 	fear_style_movement("fear_style_movement", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	manual_pickup( "manual_pickup", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	enemies_altfire( "enemies_altfire", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	less_ammo( "less_ammo", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+
 // Controls the application of the robus radius damage model.
 ConVar	sv_robust_explosions( "sv_robust_explosions","1", FCVAR_REPLICATED );
 
@@ -1755,20 +1763,27 @@ float CHalfLife2::GetAutoAimScale( CBasePlayer *pPlayer )
 //---------------------------------------------------------
 float CHalfLife2::GetAmmoQuantityScale( int iAmmoIndex )
 {
+	float flscale;
 	switch( GetSkillLevel() )
 	{
 	case SKILL_EASY:
-		return sk_ammo_qty_scale1.GetFloat();
+		flscale = sk_ammo_qty_scale1.GetFloat();
+		break;
 
 	case SKILL_MEDIUM:
-		return sk_ammo_qty_scale2.GetFloat();
+		flscale = sk_ammo_qty_scale2.GetFloat();
+		break;
 
 	case SKILL_HARD:
-		return sk_ammo_qty_scale3.GetFloat();
+		flscale = sk_ammo_qty_scale3.GetFloat();
+		break;
 
 	default:
-		return 0.0f;
+		flscale = 0.0f;
+		break;
 	}
+	
+	return flscale * ( less_ammo.GetBool() ? 0.5 : 1.0 );
 }
 
 void CHalfLife2::LevelInitPreEntity()

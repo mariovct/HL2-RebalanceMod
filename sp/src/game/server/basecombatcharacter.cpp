@@ -2177,6 +2177,14 @@ bool CBaseCombatCharacter::Weapon_EquipAmmoOnly( CBaseCombatWeapon *pWeapon )
 	{
 		if ( m_hMyWeapons[i].Get() && FClassnameIs(m_hMyWeapons[i], pWeapon->GetClassname()) )
 		{
+#ifdef HL2_DLL
+			float flAmmoScale = 1.0 / HL2GameRules()->GetAmmoQuantityScale(pWeapon->m_iPrimaryAmmoType);
+			pWeapon->m_iClip1 /= (int)flAmmoScale;
+			
+			if ( pWeapon->m_iClip1 <= 0 )
+				pWeapon->m_iClip1 = 1;
+#endif
+			
 			// Just give the ammo from the clip
 			int	primaryGiven	= (pWeapon->UsesClipsForAmmo1()) ? pWeapon->m_iClip1 : pWeapon->GetPrimaryAmmoCount();
 			int secondaryGiven	= (pWeapon->UsesClipsForAmmo2()) ? pWeapon->m_iClip2 : pWeapon->GetSecondaryAmmoCount();

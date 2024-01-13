@@ -1859,6 +1859,9 @@
     <ClInclude Include="..\..\game\shared\hl2\hl2_shareddefs.h">
       <Filter>Source Files\HL2 DLL</Filter>
     </ClInclude>
+    <ClInclude Include="hl2\hl2r_options.h">
+      <Filter>Source Files\HL2 DLL</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\game\shared\hl2\hl_gamemovement.h">
       <Filter>Source Files\HL2 DLL</Filter>
     </ClInclude>
@@ -3095,6 +3098,9 @@
       <Filter>Source Files\HL2 DLL</Filter>
     </ClCompile>
     <ClCompile Include="..\..\game\shared\hl2\hl2_usermessages.cpp">
+      <Filter>Source Files\HL2 DLL</Filter>
+    </ClCompile>
+    <ClCompile Include="hl2\hl2r_options.cpp">
       <Filter>Source Files\HL2 DLL</Filter>
     </ClCompile>
     <ClCompile Include="..\..\game\shared\hl2\hl_gamemovement.cpp">

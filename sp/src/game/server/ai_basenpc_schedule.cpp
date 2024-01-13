@@ -992,6 +992,12 @@ bool CAI_BaseNPC::FindCoverFromEnemy( bool bNodesOnly, float flMinDistance, floa
 bool CAI_BaseNPC::FindCoverFromEnemyInRange( float flMinDistance, float flMaxDistance )
 {
 	CBaseEntity *pEntity = GetEnemy();
+	
+	CBaseEntity *pPlayer = gEntList.FindEntityByName( NULL, "!player" );
+	if ( pPlayer && pPlayer)
+	{
+		
+	}
 
 	// Find cover from self if no enemy available
 	if ( pEntity == NULL )
@@ -1006,7 +1012,7 @@ bool CAI_BaseNPC::FindCoverFromEnemyInRange( float flMinDistance, float flMaxDis
 	
 	float flDesiredDist = (flMinDistance + flMaxDistance) / 2;
 		
-	if ( !GetTacticalServices()->FindCoverPos( GetLocalOrigin(), pEntity->GetAbsOrigin(), pEntity->EyePosition(), flMinDistance, flMaxDistance, &coverPos, flDesiredDist ) )
+	if ( !GetTacticalServices()->FindCoverPos( GetAbsOrigin(), pEntity->GetAbsOrigin(), pEntity->EyePosition(), flMinDistance, flMaxDistance, &coverPos, flDesiredDist ) )
 		return false;
 
 	AI_NavGoal_t goal( GOALTYPE_COVER, coverPos, ACT_RUN, AIN_HULL_TOLERANCE );

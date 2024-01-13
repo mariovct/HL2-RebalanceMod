@@ -3140,7 +3140,7 @@ Activity CNPC_MetroPolice::NPC_TranslateActivity( Activity newActivity )
 	}
 	
 	// AR2 anims
-	if ( newActivity == ACT_RANGE_ATTACK_AR2 )
+/* 	if ( newActivity == ACT_RANGE_ATTACK_AR2 )
 	{
 		return ACT_RANGE_ATTACK_SMG1;
 	}
@@ -3156,7 +3156,7 @@ Activity CNPC_MetroPolice::NPC_TranslateActivity( Activity newActivity )
 	if ( newActivity == ACT_IDLE_ANGRY_SHOTGUN )
 	{
 		return ACT_IDLE_ANGRY_SMG1;
-	}
+	} */
 
 
 	return newActivity;
@@ -4381,19 +4381,18 @@ int CNPC_MetroPolice::SelectFailSchedule( int failedSchedule, int failedTask, AI
 		return SCHED_METROPOLICE_ESTABLISH_LINE_OF_FIRE;
 	}
 	
-	if( failedTask == TASK_FIND_COVER_FROM_ENEMY )
+	if( failedSchedule == SCHED_METROPOLICE_TAKE_COVER_FROM_ENEMY || failedSchedule == SCHED_METROPOLICE_HIDE_AND_RELOAD )
 	{
-		if( CanDeployManhack() && OccupyStrategySlot( SQUAD_SLOT_POLICE_DEPLOY_MANHACK ) )
-			return SCHED_METROPOLICE_DEPLOY_MANHACK;
-	
-		if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) 
-		&& ( TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || 
-		TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) ) )
+		if ( GetEnemy() )
 		{
-			return SCHED_RANGE_ATTACK1;
+			if( failedSchedule == SCHED_METROPOLICE_HIDE_AND_RELOAD  )
+				return SCHED_RELOAD;
+	
+			if ( HasCondition( COND_CAN_RANGE_ATTACK1 ) && ( TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) ) )
+				return SCHED_RANGE_ATTACK1;
 		}
 		
-		return failedSchedule;
+		return SCHED_FAIL;
 	}
 	
 	switch( failedSchedule )
@@ -5394,7 +5393,7 @@ void CNPC_MetroPolice::GatherConditions( void )
 				SetCondition( COND_LOW_PRIMARY_AMMO );
 			}
 		}
-		else*/ if( TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) )
+		else  */if( TryToEnterPistolSlot( SQUAD_SLOT_ATTACK1 ) || TryToEnterPistolSlot( SQUAD_SLOT_ATTACK2 ) )
 		{
 			SetCondition( COND_ATTACK_SLOT_AVAILABLE );
 		}

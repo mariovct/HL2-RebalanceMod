@@ -60,7 +60,7 @@ ConVar tf_weapon_criticals_bucket_bottom( "tf_weapon_criticals_bucket_bottom", "
 ConVar tf_weapon_criticals_bucket_default( "tf_weapon_criticals_bucket_default", "300.0", FCVAR_REPLICATED | FCVAR_CHEAT );
 #endif // TF
 
-ConVar sk_realistic_reloading( "sk_realistic_reloading", "0" );
+extern ConVar realistic_reload;
 ConVar sk_alternate_recoil( "sk_alternate_recoil", "0" );
 ConVar deployspeedmult( "deployspeedmult", "1.3" );
 
@@ -2217,7 +2217,7 @@ void CBaseCombatWeapon::FinishReload( void )
 		// If I use primary clips, reload primary
 		if ( UsesClipsForAmmo1() )
 		{
-			if ( sk_realistic_reloading.GetBool() )
+			if ( realistic_reload.GetBool() )
 			{
 				int primary = min( GetMaxClip1() - m_iClip1, pOwner->GetAmmoCount( m_iPrimaryAmmoType ) );	
 				if ( pOwner->GetAmmoCount( m_iPrimaryAmmoType ) >= GetMaxClip1() )

@@ -107,7 +107,7 @@ ConVar sv_infinite_aux_power( "sv_infinite_aux_power", "0", FCVAR_CHEAT );
 
 ConVar autoaim_unlock_target( "autoaim_unlock_target", "0.8666" );
 
-ConVar hl2_fear_style_movement( "hl2_fear_style_movement", "0" );
+extern ConVar fear_style_movement;
 
 ConVar sv_stickysprint("sv_stickysprint", "0", FCVAR_ARCHIVE | FCVAR_ARCHIVE_XBOX);
 
@@ -542,6 +542,18 @@ void CHL2_Player::HandleSpeedChanges( void )
 		else
 		{
 			StopWalking();
+		}
+	}
+	
+	if ( !bIsSprinting && !bWantSprint && !bIsWalking && !bWantWalking )
+	{
+		if ( !fear_style_movement.GetBool() )
+		{
+			SetMaxSpeed( HL2_NORM_SPEED );
+		}
+		else
+		{
+			SetMaxSpeed( HL2_WALK_SPEED );
 		}
 	}
 }
@@ -1223,7 +1235,7 @@ void CHL2_Player::StartSprinting( void )
 	filter.UsePredictionRules();
 	EmitSound( filter, entindex(), "HL2Player.SprintStart" );
 	
-	if ( !hl2_fear_style_movement.GetBool() )
+	if ( !fear_style_movement.GetBool() )
 	{
 		SetMaxSpeed( HL2_SPRINT_SPEED );
 	}
@@ -1244,7 +1256,7 @@ void CHL2_Player::StopSprinting( void )
 		SuitPower_RemoveDevice( SuitDeviceSprint );
 	}
 
-	if( IsSuitEquipped() && !hl2_fear_style_movement.GetBool() )
+	if( IsSuitEquipped() && !fear_style_movement.GetBool() )
 	{
 		SetMaxSpeed( HL2_NORM_SPEED );
 	}
@@ -1290,14 +1302,6 @@ void CHL2_Player::StartWalking( void )
 //-----------------------------------------------------------------------------
 void CHL2_Player::StopWalking( void )
 {
-	if ( !hl2_fear_style_movement.GetBool() )
-	{
-		SetMaxSpeed( HL2_NORM_SPEED );
-	}
-	else
-	{
-		SetMaxSpeed( HL2_WALK_SPEED );
-	}
 	m_fIsWalking = false;
 }
 

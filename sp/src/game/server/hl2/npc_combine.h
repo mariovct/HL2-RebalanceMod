@@ -80,6 +80,7 @@ public:
 
 	Class_T			Classify( void );
 	bool			IsElite() { return m_fIsElite; }
+	bool			IsPrisonGuard() { return m_fIsGuard; }
 	void			DelayAltFireAttack( float flDelay );
 	void			DelaySquadAltFireAttack( float flDelay );
 	float			MaxYawSpeed( void );
@@ -152,7 +153,8 @@ public:
 	void			OnStartSchedule( int scheduleType );
 
 	virtual bool	ShouldPickADeathPose( void );
-
+	virtual int		RangeAttack1Conditions( float flDot, float flDist );
+	
 protected:
 	void			SetKickDamage( int nDamage ) { m_nKickDamage = nDamage; }
 	CAI_Sentence< CNPC_Combine > *GetSentences() { return &m_Sentences; }
@@ -197,6 +199,7 @@ private:
 		SCHED_COMBINE_FACE_IDEAL_YAW,
 		SCHED_COMBINE_MOVE_TO_MELEE,
 		SCHED_COMBINE_FLANK_ENEMY,
+		SCHED_COMBINE_MELEE_ATTACK2,
 		NEXT_SCHEDULE,
 	};
 
@@ -306,6 +309,7 @@ private:
 public:
 	int				m_iLastAnimEventHandled;
 	bool			m_fIsElite;
+	bool			m_fIsGuard;
 	bool			m_bCanRun;
 	Vector			m_vecAltFireTarget;
 

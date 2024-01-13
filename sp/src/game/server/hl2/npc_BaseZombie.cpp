@@ -54,7 +54,7 @@
 #include "tier0/memdbgon.h"
 
 extern ConVar sk_npc_head;
-extern ConVar sk_exploding_crabs;
+extern ConVar explosive_crabs;
 
 extern ConVar sk_npc_head_crossbow;
 extern ConVar sk_plr_dmg_crossbow;
@@ -2361,9 +2361,9 @@ void CNPC_BaseZombie::Event_Killed( const CTakeDamageInfo &info )
 		UTIL_BloodSpray( WorldSpaceCenter(), vecDamageDir, BLOOD_COLOR_YELLOW, 8, FX_BLOODSPRAY_CLOUD );
 	}
 	
-	if ( ( !m_fIsHeadless ) && sk_exploding_crabs.GetBool() )
+	if ( ( !m_fIsHeadless ) && explosive_crabs.GetBool() )
 	{
-		ExplosionCreate( EyePosition(), GetAbsAngles(), this, 100, 256, true );
+		ExplosionCreate( EyePosition(), GetAbsAngles(), this, 100, 196, true );
 	}
 
    	BaseClass::Event_Killed( info );
@@ -2479,10 +2479,10 @@ void CNPC_BaseZombie::ReleaseHeadcrab( const Vector &vecOrigin, const Vector &ve
 
 		if ( pGib )
 		{
-			if ( !m_bHasExploded && sk_exploding_crabs.GetBool() )
+			if ( !m_bHasExploded && explosive_crabs.GetBool() )
 			{
 				m_bHasExploded = true;
-				ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), this, 100, 256, true );
+				ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), this, 100, 196, true );
 			}
 			
 			CBaseAnimating *pAnimatingGib = dynamic_cast<CBaseAnimating*>(pGib);

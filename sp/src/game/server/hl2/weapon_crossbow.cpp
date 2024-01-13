@@ -52,7 +52,7 @@ void TE_StickyBolt( IRecipientFilter& filter, float delay,	Vector vecDirection, 
 #define	BOLT_SKIN_NORMAL	0
 #define BOLT_SKIN_GLOW		1
 
-#define CHARGE_TIME 2.5f
+#define CHARGE_TIME 2.0f
 
 //-----------------------------------------------------------------------------
 // Crossbow Bolt

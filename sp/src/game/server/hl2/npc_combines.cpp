@@ -43,6 +43,8 @@ extern ConVar sk_plr_num_shotgun_pellets;
 //Whether or not the combine should spawn health on death
 ConVar	combine_spawn_health( "combine_spawn_health", "1" );
 
+ConVar	promotion( "promotion", "0" );
+
 LINK_ENTITY_TO_CLASS( npc_combine_s, CNPC_CombineS );
 
 
@@ -56,13 +58,37 @@ extern Activity ACT_WALK_MARCH;
 //-----------------------------------------------------------------------------
 void CNPC_CombineS::Spawn( void )
 {
-if( FStrEq(STRING(gpGlobals->mapname), "d3_breen_01") )
-{
-	SetModelName( MAKE_STRING( "models/combine_super_soldier.mdl" ) );
-}
+	// We have to do this because our weapon is only equipped after we're spawned.
+	bool bHasShotgun = m_spawnEquipment != NULL_STRING && !FStrEq(STRING(m_spawnEquipment), "weapon_shotgun");
+		
+	if( FStrEq(STRING(gpGlobals->mapname), "d3_breen_01")  || ( promotion.GetBool() && bHasShotgun ) )
+	{
+		SetModelName( MAKE_STRING( "models/combine_super_soldier.mdl" ) );
+	}
 	
 	Precache();
 	SetModel( STRING( GetModelName() ) );
+	
+	if( IsPrisonGuard() )
+	{
+		if ( FStrEq(STRING(m_spawnEquipment), "weapon_shotgun") )
+		{
+			m_spawnEquipment = MAKE_STRING( "weapon_357" );
+		}
+		
+		else if ( FStrEq(STRING(m_spawnEquipment), "weapon_ar2") )
+		{
+			m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
+		}	
+		else if ( FStrEq(STRING(m_spawnEquipment), "weapon_smg1") )
+		{
+			// Use these as introductory maps
+			if ( FStrEq(STRING(gpGlobals->mapname), "d2_coast_12") || FStrEq(STRING(gpGlobals->mapname), "d2_prison_01") ) 
+			{
+				m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
+			}
+		}	
+	}
 
 	if( IsElite() )
 	{
@@ -109,6 +135,15 @@ void CNPC_CombineS::Precache()
 	{
 		m_fIsElite = false;
 	}
+	
+	if( !Q_stricmp( pModelName, "models/combine_soldier_prisonguard.mdl" ) )
+	{
+		m_fIsGuard = true;
+	}
+	else
+	{
+		m_fIsGuard = false;
+	}
 
 	if( !GetModelName() )
 	{
@@ -120,6 +155,7 @@ void CNPC_CombineS::Precache()
 	UTIL_PrecacheOther( "item_healthvial" );
 	UTIL_PrecacheOther( "weapon_frag" );
 	UTIL_PrecacheOther( "item_ammo_ar2_altfire" );
+	UTIL_PrecacheOther( "item_ammo_smg1_grenade" );
 
 	BaseClass::Precache();
 }
@@ -306,13 +342,21 @@ void CNPC_CombineS::Event_Killed( const CTakeDamageInfo &info )
 	if ( pPlayer != NULL )
 	{
 		// Elites drop alt-fire ammo, so long as they weren't killed by dissolving.
-		if( IsElite() )
+		if( IsElite() && GetActiveWeapon()->UsesSecondaryAmmo() )
 		{
 #ifdef HL2_EPISODIC
 			if ( HasSpawnFlags( SF_COMBINE_NO_AR2DROP ) == false )
 #endif
 			{
-				CBaseEntity *pItem = DropItem( "item_ammo_ar2_altfire", WorldSpaceCenter()+RandomVector(-4,4), RandomAngle(0,360) );
+				CBaseEntity *pItem;
+				if ( FClassnameIs(GetActiveWeapon(), "weapon_smg1"))
+				{
+					pItem = DropItem( "item_ammo_smg1_grenade", WorldSpaceCenter()+RandomVector(-4,4), RandomAngle(0,360) );
+				}
+				else
+				{
+					pItem = DropItem( "item_ammo_ar2_altfire", WorldSpaceCenter()+RandomVector(-4,4), RandomAngle(0,360) );
+				}
 
 				if ( pItem )
 				{

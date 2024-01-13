@@ -22,7 +22,7 @@
 #include "tier0/memdbgon.h"
 
 extern ConVar   sk_plr_dmg_smg1_grenade;	
-extern ConVar 	sk_realistic_reloading;
+extern ConVar 	realistic_reload;
 
 ConVar sk_smg1_grenade_speed( "sk_smg1_grenade_speed", "1000.0" );
 
@@ -36,7 +36,7 @@ public:
 
 	DECLARE_SERVERCLASS();
 	
-	void	ItemPostFrame( void ) { BaseClass::ItemPostFrame(); m_bMagazineStyleReloads = sk_realistic_reloading.GetBool() ? true : false; };
+	void	ItemPostFrame( void ) { BaseClass::ItemPostFrame(); m_bMagazineStyleReloads = realistic_reload.GetBool() ? true : false; };
 	
 	void	Precache( void );
 	void	AddViewKick( void );
@@ -54,7 +54,7 @@ public:
 	float	GetFireRate( void ) 
 	{ return 0.055f; }	// 13.3hz
 	int		CapabilitiesGet( void ) { return bits_CAP_WEAPON_RANGE_ATTACK1; }
-	int		WeaponRangeAttack2Condition( float flDot, float flDist );
+	int 	WeaponRangeAttack2Condition( float flDot, float flDist );
 	Activity	GetPrimaryAttackActivity( void );
 
 	virtual const Vector& GetBulletSpread( void )
@@ -239,32 +239,31 @@ void CWeaponSMG1::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 		}
 		break;
 
-		/*//FIXME: Re-enable
-		case EVENT_WEAPON_AR2_GRENADE:
-		{
+	case EVENT_WEAPON_AR2_ALTFIRE:
+	{
 		CAI_BaseNPC *npc = pOperator->MyNPCPointer();
 
 		Vector vecShootOrigin, vecShootDir;
 		vecShootOrigin = pOperator->Weapon_ShootPosition();
-		vecShootDir = npc->GetShootEnemyDir( vecShootOrigin );
 
 		Vector vecThrow = m_vecTossVelocity;
 
-		CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create( "grenade_ar2", vecShootOrigin, vec3_angle, npc );
-		pGrenade->SetAbsVelocity( vecThrow );
-		pGrenade->SetLocalAngularVelocity( QAngle( 0, 400, 0 ) );
-		pGrenade->SetMoveType( MOVETYPE_FLYGRAVITY ); 
-		pGrenade->m_hOwner			= npc;
-		pGrenade->m_pMyWeaponAR2	= this;
-		pGrenade->SetDamage(sk_npc_dmg_ar2_grenade.GetFloat());
-
-		// FIXME: arrgg ,this is hard coded into the weapon???
-		m_flNextGrenadeCheck = gpGlobals->curtime + 6;// wait six seconds before even looking again to see if a grenade can be thrown.
-
-		m_iClip2--;
+		//If on the rare case the vector is 0 0 0, cancel for avoid launching the grenade without speed
+		//This should be on WeaponRangeAttack2Condition(), but for some unknown reason return CASE_NONE
+		//doesn't stop the launch
+		if (vecThrow == Vector(0, 0, 0)){
+			break;
 		}
-		break;
-		*/
+
+		CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create("grenade_ar2", vecShootOrigin, vec3_angle, npc);
+		pGrenade->SetAbsVelocity( vecThrow );
+		pGrenade->SetLocalAngularVelocity(RandomAngle(-400, 400)); //tumble in air
+		pGrenade->SetMoveType(MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE);
+		pGrenade->SetThrower(GetOwner());
+		pGrenade->SetGravity(0.5); // lower gravity since grenade is aerodynamic and engine doesn't know it.
+		pGrenade->SetDamage(sk_plr_dmg_smg1_grenade.GetFloat());
+	}
+	break;
 
 	default:
 		BaseClass::Operator_HandleAnimEvent( pEvent, pOperator );
@@ -408,100 +407,28 @@ void CWeaponSMG1::SecondaryAttack( void )
 int CWeaponSMG1::WeaponRangeAttack2Condition( float flDot, float flDist )
 {
 	CAI_BaseNPC *npcOwner = GetOwner()->MyNPCPointer();
-
-	return COND_NONE;
-
-/*
-	// --------------------------------------------------------
-	// Assume things haven't changed too much since last time
-	// --------------------------------------------------------
-	if (gpGlobals->curtime < m_flNextGrenadeCheck )
-		return m_lastGrenadeCondition;
-*/
-
-	// -----------------------
-	// If moving, don't check.
-	// -----------------------
-	if ( npcOwner->IsMoving())
-		return COND_NONE;
-
 	CBaseEntity *pEnemy = npcOwner->GetEnemy();
 
 	if (!pEnemy)
 		return COND_NONE;
-
-	Vector vecEnemyLKP = npcOwner->GetEnemyLKP();
-	if ( !( pEnemy->GetFlags() & FL_ONGROUND ) && pEnemy->GetWaterLevel() == 0 && vecEnemyLKP.z > (GetAbsOrigin().z + WorldAlignMaxs().z) )
-	{
-		//!!!BUGBUG - we should make this check movetype and make sure it isn't FLY? Players who jump a lot are unlikely to 
-		// be grenaded.
-		// don't throw grenades at anything that isn't on the ground!
-		return COND_NONE;
-	}
-	
 	// --------------------------------------
 	//  Get target vector
 	// --------------------------------------
-	Vector vecTarget;
-	if (random->RandomInt(0,1))
-	{
-		// magically know where they are
-		vecTarget = pEnemy->WorldSpaceCenter();
-	}
-	else
-	{
-		// toss it to where you last saw them
-		vecTarget = vecEnemyLKP;
-	}
-	// vecTarget = m_vecEnemyLKP + (pEnemy->BodyTarget( GetLocalOrigin() ) - pEnemy->GetLocalOrigin());
-	// estimate position
-	// vecTarget = vecTarget + pEnemy->m_vecVelocity * 2;
-
-
-	if ( ( vecTarget - npcOwner->GetLocalOrigin() ).Length2D() <= COMBINE_MIN_GRENADE_CLEAR_DIST )
-	{
-		// crap, I don't want to blow myself up
-		m_flNextGrenadeCheck = gpGlobals->curtime + 1; // one full second.
-		return (COND_NONE);
-	}
-
-	// ---------------------------------------------------------------------
-	// Are any friendlies near the intended grenade impact area?
-	// ---------------------------------------------------------------------
-	CBaseEntity *pTarget = NULL;
-
-	while ( ( pTarget = gEntList.FindEntityInSphere( pTarget, vecTarget, COMBINE_MIN_GRENADE_CLEAR_DIST ) ) != NULL )
-	{
-		//Check to see if the default relationship is hatred, and if so intensify that
-		if ( npcOwner->IRelationType( pTarget ) == D_LI )
-		{
-			// crap, I might blow my own guy up. Don't throw a grenade and don't check again for a while.
-			m_flNextGrenadeCheck = gpGlobals->curtime + 1; // one full second.
-			return (COND_WEAPON_BLOCKED_BY_FRIEND);
-		}
-	}
+	// toss it to where you last saw them
+	Vector vecTarget = npcOwner->GetEnemyLKP() + pEnemy->GetViewOffset();
 
 	// ---------------------------------------------------------------------
 	// Check that throw is legal and clear
 	// ---------------------------------------------------------------------
-	// FIXME: speed is based on difficulty...
-
-	Vector vecToss = VecCheckThrow( this, npcOwner->GetLocalOrigin() + Vector(0,0,60), vecTarget, 600.0, 0.5 );
+	Vector vecToss = VecCheckThrow( this, npcOwner->GetLocalOrigin() + Vector(0,0,60), vecTarget, sk_smg1_grenade_speed.GetFloat(), 0.5 );
 	if ( vecToss != vec3_origin )
 	{
 		m_vecTossVelocity = vecToss;
-
-		// don't check again for a while.
-		// JAY: HL1 keeps checking - test?
-		//m_flNextGrenadeCheck = gpGlobals->curtime;
-		m_flNextGrenadeCheck = gpGlobals->curtime + 0.3; // 1/3 second.
 		return COND_CAN_RANGE_ATTACK2;
 	}
 	else
 	{
-		// don't check again for a while.
-		m_flNextGrenadeCheck = gpGlobals->curtime + 1; // one full second.
-		return COND_WEAPON_SIGHT_OCCLUDED;
+		return COND_NONE;
 	}
 }
 

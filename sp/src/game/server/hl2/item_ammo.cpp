@@ -12,6 +12,10 @@
 #include "eventlist.h"
 #include "npcevent.h"
 
+#ifdef HL2_DLL
+#include "hl2_gamerules.h"
+#endif
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -58,7 +62,11 @@ int ITEM_GiveAmmo( CBasePlayer *pPlayer, float flCount, const char *pszAmmoName,
 		return 0;
 	}
 
+#ifdef HL2_DLL
+	flCount *= HL2GameRules()->GetAmmoQuantityScale(iAmmoType);
+#else
 	flCount *= g_pGameRules->GetAmmoQuantityScale(iAmmoType);
+#endif
 
 	// Don't give out less than 1 of anything.
 	flCount = MAX( 1.0f, flCount );

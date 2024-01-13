@@ -29,6 +29,7 @@
 #include <stdarg.h>
 
 extern IFileSystem *filesystem;
+extern ConVar fear_style_movement;
 
 #ifndef CLIENT_DLL
 	#include "env_player_surface_trigger.h"
@@ -4294,7 +4295,7 @@ void CGameMovement::HandleDuckingSpeedCrop( void )
 {
 	if ( !( m_iSpeedCropped & SPEED_CROPPED_DUCK ) && ( player->GetFlags() & FL_DUCKING ) && ( player->GetGroundEntity() != NULL ) )
 	{
-		float frac = hl2_duckspeedfrac.GetFloat();
+		float frac = hl2_duckspeedfrac.GetFloat() * ( fear_style_movement.GetBool() ? 1.5 : 1.0 );
 		mv->m_flForwardMove	*= frac;
 		mv->m_flSideMove	*= frac;
 		mv->m_flUpMove		*= frac;

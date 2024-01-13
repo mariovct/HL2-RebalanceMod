@@ -90,7 +90,7 @@ public:
 
 	virtual float GetFireRate( void ) 
 	{
-		if( GetOwner() && GetOwner()->IsNPC() )
+		if( GetOwner() && GetOwner()->IsNPC() && !FClassnameIs( GetOwner(), "npc_combine_s" ) )
 		{
 			return 0.4;
 		}
@@ -144,7 +144,7 @@ acttable_t	CWeaponPistol::m_acttable[] =
 
 IMPLEMENT_ACTTABLE( CWeaponPistol );
 
-extern ConVar sk_realistic_reloading;
+extern ConVar realistic_reload;
 extern ConVar sk_alternate_recoil;
 
 //-----------------------------------------------------------------------------
@@ -152,7 +152,7 @@ extern ConVar sk_alternate_recoil;
 //-----------------------------------------------------------------------------
 CWeaponPistol::CWeaponPistol( void )
 {
-	if ( sk_realistic_reloading.GetBool() )
+	if ( realistic_reload.GetBool() )
 	{
 		m_bMagazineStyleReloads = true;
 	}
@@ -402,9 +402,9 @@ void CWeaponPistol::ItemPostFrame( void )
 {
 	BaseClass::ItemPostFrame();
 	
-	m_bMagazineStyleReloads = sk_realistic_reloading.GetBool() ? true : false;
+	m_bMagazineStyleReloads = realistic_reload.GetBool() ? true : false;
 	
-	if ( sk_realistic_reloading.GetBool() )
+	if ( realistic_reload.GetBool() )
 	{
 		m_bMagazineStyleReloads = true;
 	}
