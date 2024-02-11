@@ -2149,7 +2149,7 @@ void UpdateRichPresence ( void )
 	// Get presence data based on the game we're playing
 	uint iGameID, iChapterIndex, iChapterID, iGamePresenceID;
 	iGameID = iChapterIndex = iChapterID = iGamePresenceID = 0;
-	if ( Q_stristr( modDir, "hl2" ) || Q_stristr( modDir, "hl2_rebalance" ) || Q_stristr( modDir, "hl2_mirrored" ) )
+	if ( Q_stristr( modDir, "hl2" ) || Q_stristr( modDir, "hl2_rebalance" ) || Q_stristr( modDir, "hl2_mirrored_rebalance" ) )
 	{
 		iGameID			= CONTEXT_GAME_GAME_HALF_LIFE_2;
 		iChapterID		= CONTEXT_CHAPTER_HL2;
