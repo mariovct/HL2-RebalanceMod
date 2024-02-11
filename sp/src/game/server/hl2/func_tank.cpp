@@ -913,6 +913,7 @@ void CFuncTank::Precache( void )
 		PrecacheScriptSound( STRING(m_soundLoopRotate) );
 
 	PrecacheScriptSound( "Func_Tank.BeginUse" );
+	PrecacheScriptSound( "Buttons.snd6" );
 	
 	// Precache the combine cannon
 	if ( m_iEffectHandling == EH_COMBINE_CANNON )
@@ -1130,7 +1131,7 @@ void CFuncTank::StopControl()
 	m_hController = NULL;
 
 	// Set think, if the func_tank can think on its own.
-	if ( IsActive() || (IsControllable() && !HasController()) )
+	if ( ( IsActive() || (IsControllable() && !HasController()) ) && CheckAmmoFull() )
 	{
 		// Delay the think to find controllers a bit
 #ifdef FUNCTANK_AUTOUSE
@@ -1140,6 +1141,10 @@ void CFuncTank::StopControl()
 #endif//FUNCTANK_AUTOUSE
 
 		SetNextThink( m_flNextControllerSearch );
+	}
+	else
+	{
+		SetNextThink( gpGlobals->curtime + 0.05 );
 	}
 
 	SetLocalAngularVelocity( vec3_angle );
@@ -1579,7 +1584,12 @@ void CFuncTank::Think( void )
 	
 	CBasePlayer *pPlayer = UTIL_PlayerByIndex(1);
 	
-	if ( IsPlayerManned() && ( ( pPlayer->m_nButtons & IN_ATTACK ) == 0 || m_bNoAmmo ) )
+	if ( IsPlayerManned() )
+	{
+		if ( ( pPlayer->m_nButtons & IN_ATTACK ) == 0 || m_bNoAmmo )
+			RechargeAmmo();
+	}
+	else
 	{
 		RechargeAmmo();
 	}
@@ -1590,7 +1600,7 @@ void CFuncTank::Think( void )
 	}
 
 	// Look for a new controller?
-	if ( IsControllable() && !HasController() && (m_flNextControllerSearch <= gpGlobals->curtime) )
+	if ( ( IsControllable() && !HasController() && (m_flNextControllerSearch <= gpGlobals->curtime) ) && CheckAmmoFull() )
 	{
 		if ( m_bShouldFindNPCs && gpGlobals->curtime > 5.0f )
 		{
@@ -1674,6 +1684,11 @@ void CFuncTank::Think( void )
 
 		m_flNextControllerSearch = gpGlobals->curtime + 2.0f;
 #endif//FUNCTANK_AUTOUSE
+	}
+	else if ( !CheckAmmoFull() )
+	{
+		DevMsg("THINK\n");
+		SetNextThink( gpGlobals->curtime + 0.05f );
 	}
 
 	// refresh the matrix
@@ -2517,8 +2532,11 @@ void CFuncTank::RechargeAmmo(void)
 	int nMaxAmmo = 200;
 	if ( m_nAmmoCount == nMaxAmmo )
 		return;
+	
+	// Recharge 5 times slower if we're unmanned.
+	float mult = IsPlayerManned() ? 1.0 : 0.2;
 
-	float flRechargeRate = AMMO_RECHARGE_RATE * 
+	float flRechargeRate = AMMO_RECHARGE_RATE * mult *
 	SimpleSplineRemapVal( m_nAmmoCount, 0.0f, 200.0f, 1.0f, 1.75f ); // This feels about right.
 	float flChargeAmount = flRechargeRate * gpGlobals->frametime;
 	if ( m_flDrainRemainder != 0.0f )
@@ -2539,10 +2557,11 @@ void CFuncTank::RechargeAmmo(void)
 	int nAmmoToAdd = (int)m_flChargeRemainder;
 	m_flChargeRemainder -= nAmmoToAdd;
 	m_nAmmoCount += nAmmoToAdd;
-	if ( m_nAmmoCount > nMaxAmmo )
+	if ( m_nAmmoCount >= nMaxAmmo )
 	{
 		m_nAmmoCount = nMaxAmmo;
 		m_flChargeRemainder = 0.0f;
+		EmitSound( "Buttons.snd6" );
 	}
 }
 

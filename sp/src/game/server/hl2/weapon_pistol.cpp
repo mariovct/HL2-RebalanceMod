@@ -144,7 +144,7 @@ acttable_t	CWeaponPistol::m_acttable[] =
 
 IMPLEMENT_ACTTABLE( CWeaponPistol );
 
-extern ConVar realistic_reload;
+extern ConVar hl2r_realistic_reload;
 extern ConVar sk_alternate_recoil;
 
 //-----------------------------------------------------------------------------
@@ -152,7 +152,7 @@ extern ConVar sk_alternate_recoil;
 //-----------------------------------------------------------------------------
 CWeaponPistol::CWeaponPistol( void )
 {
-	if ( realistic_reload.GetBool() )
+	if ( hl2r_realistic_reload.GetBool() )
 	{
 		m_bMagazineStyleReloads = true;
 	}
@@ -402,9 +402,9 @@ void CWeaponPistol::ItemPostFrame( void )
 {
 	BaseClass::ItemPostFrame();
 	
-	m_bMagazineStyleReloads = realistic_reload.GetBool() ? true : false;
+	m_bMagazineStyleReloads = hl2r_realistic_reload.GetBool() ? true : false;
 	
-	if ( realistic_reload.GetBool() )
+	if ( hl2r_realistic_reload.GetBool() )
 	{
 		m_bMagazineStyleReloads = true;
 	}

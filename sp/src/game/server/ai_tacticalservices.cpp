@@ -435,35 +435,35 @@ int CAI_TacticalServices::FindCoverNode(const Vector &vNearPos, const Vector &vT
 						iIdealNode = nodeIndex;
 					
 					// If there's no desired dist, use the first node given to us (This is default behavior)
-					if ( flDesiredDist < 0.0 )
-						break;
-					
-					// Try to base the cover location on the desired distance
-					float flIdealDist = flDesiredDist;
-					float flNodeScore = 0;
-						
-					// Figure out the distance from the enemy to the cover
-					float flNodePathDist = ComputePathDistance( GetOuter()->GetNavType(), vThreatPos, nodeOrigin );
-					float flNodeDirectDist = ( vThreatPos - nodeOrigin ).Length();
-						
-					float flNodeMedianDist = ( flNodePathDist + flNodeDirectDist ) / 2;
-						
-					// Score it based on how close it is to the desired distance
-					flNodeScore += ( flIdealDist - fabsf(flNodeMedianDist - flIdealDist) ) / flIdealDist;
-						
-					// Distance from us to the cover
-					float flNearPathDist = ComputePathDistance( GetOuter()->GetNavType(), vNearPos, nodeOrigin );
-					float flNearDirectDist = ( vNearPos - nodeOrigin ).Length();
-						
-					float flNearMedianDist = ( flNearPathDist + flNearDirectDist ) / 2;
-
-					// Bias out really long routes
-					flNodeScore += 1.0 - ( flNearMedianDist / flNodeMedianDist );
-						
-					if ( flNodeScore > flScore )
+					if ( flDesiredDist > 0.0f )
 					{
-						flScore = flNodeScore;
-						iIdealNode = nodeIndex;
+						// Try to base the cover location on the desired distance
+						float flIdealDist = flDesiredDist;
+						float flNodeScore = 0;
+							
+						// Figure out the distance from the enemy to the cover
+						float flNodePathDist = ComputePathDistance( GetOuter()->GetNavType(), vThreatPos, nodeOrigin );
+						float flNodeDirectDist = ( vThreatPos - nodeOrigin ).Length();
+							
+						float flNodeMedianDist = ( flNodePathDist + flNodeDirectDist ) / 2;
+							
+						// Score it based on how close it is to the desired distance
+						flNodeScore += ( flIdealDist - fabsf(flNodeMedianDist - flIdealDist) ) / flIdealDist;
+							
+						// Distance from us to the cover
+						float flNearPathDist = ComputePathDistance( GetOuter()->GetNavType(), vNearPos, nodeOrigin );
+						float flNearDirectDist = ( vNearPos - nodeOrigin ).Length();
+							
+						float flNearMedianDist = ( flNearPathDist + flNearDirectDist ) / 2;
+
+						// Bias out really long routes
+						flNodeScore += 1.0 - ( flNearMedianDist / flNodeMedianDist );
+							
+						if ( flNodeScore > flScore )
+						{
+							flScore = flNodeScore;
+							iIdealNode = nodeIndex;
+						}
 					}
 				}
 				else

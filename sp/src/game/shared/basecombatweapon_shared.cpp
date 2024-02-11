@@ -60,7 +60,8 @@ ConVar tf_weapon_criticals_bucket_bottom( "tf_weapon_criticals_bucket_bottom", "
 ConVar tf_weapon_criticals_bucket_default( "tf_weapon_criticals_bucket_default", "300.0", FCVAR_REPLICATED | FCVAR_CHEAT );
 #endif // TF
 
-extern ConVar realistic_reload;
+extern ConVar hl2r_realistic_reload;
+extern ConVar hl2r_hudhints;
 ConVar sk_alternate_recoil( "sk_alternate_recoil", "0" );
 ConVar deployspeedmult( "deployspeedmult", "1.3" );
 
@@ -1664,9 +1665,10 @@ void CBaseCombatWeapon::ItemPreFrame( void )
 	MaintainIdealActivity();
 
 #ifndef CLIENT_DLL
-#ifndef HL2_EPISODIC
+//#ifndef HL2_EPISODIC
 //	if ( IsX360() )
-#endif
+//#endif
+	if ( hl2r_hudhints.GetBool() )
 	{
 		// Don't display hints if we're shooting!
 		CBasePlayer *pOwner = (CBasePlayer*)(GetOwner());
@@ -2217,7 +2219,7 @@ void CBaseCombatWeapon::FinishReload( void )
 		// If I use primary clips, reload primary
 		if ( UsesClipsForAmmo1() )
 		{
-			if ( realistic_reload.GetBool() )
+			if ( hl2r_realistic_reload.GetBool() )
 			{
 				int primary = min( GetMaxClip1() - m_iClip1, pOwner->GetAmmoCount( m_iPrimaryAmmoType ) );	
 				if ( pOwner->GetAmmoCount( m_iPrimaryAmmoType ) >= GetMaxClip1() )

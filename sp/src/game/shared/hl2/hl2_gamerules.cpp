@@ -71,12 +71,24 @@ IMPLEMENT_NETWORKCLASS_ALIASED( HalfLife2Proxy, DT_HalfLife2Proxy )
 ConVar  physcannon_mega_enabled( "physcannon_mega_enabled", "0", FCVAR_CHEAT | FCVAR_REPLICATED );
 
 // Hl2r Content
-ConVar 	realistic_reload("realistic_reload", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
-ConVar 	explosive_crabs("explosive_crabs", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
-ConVar 	fear_style_movement("fear_style_movement", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
-ConVar	manual_pickup( "manual_pickup", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
-ConVar	enemies_altfire( "enemies_altfire", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
-ConVar	less_ammo( "less_ammo", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar 	hl2r_realistic_reload("hl2r_realistic_reload", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar 	hl2r_explosive_crabs("hl2r_explosive_crabs", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar 	hl2r_fear_style_movement("hl2r_fear_style_movement", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	hl2r_manual_pickup( "hl2r_manual_pickup", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	hl2r_enemies_altfire( "hl2r_enemies_altfire", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	hl2r_less_ammo( "hl2r_less_ammo", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	hl2r_enemy_promotion( "hl2r_enemy_promotion", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	hl2r_random_weapons( "hl2r_random_weapons", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	hl2r_shorter_sprint( "hl2r_shorter_sprint", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+
+ConVar	hl2r_dynamic_light_level( "hl2r_dynamic_light_level", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	hl2r_hudhints( "hl2r_hudhints", "1", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+ConVar	hl2r_episodic_flashlight( "hl2r_episodic_flashlight", "0", FCVAR_REPLICATED | FCVAR_ARCHIVE );
+ConVar	hl2r_rollangle( "hl2r_rollangle", "2", FCVAR_REPLICATED | FCVAR_ARCHIVE);
+
+// Defined here now so it can be accessed by the options menu.
+ConVar	hud_quickinfo( "hud_quickinfo", "1", FCVAR_REPLICATED | FCVAR_ARCHIVE );
+
 
 // Controls the application of the robus radius damage model.
 ConVar	sv_robust_explosions( "sv_robust_explosions","1", FCVAR_REPLICATED );
@@ -1783,7 +1795,7 @@ float CHalfLife2::GetAmmoQuantityScale( int iAmmoIndex )
 		break;
 	}
 	
-	return flscale * ( less_ammo.GetBool() ? 0.5 : 1.0 );
+	return flscale * ( hl2r_less_ammo.GetBool() ? 0.5 : 1.0 );
 }
 
 void CHalfLife2::LevelInitPreEntity()

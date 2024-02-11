@@ -107,12 +107,15 @@ ConVar sv_infinite_aux_power( "sv_infinite_aux_power", "0", FCVAR_CHEAT );
 
 ConVar autoaim_unlock_target( "autoaim_unlock_target", "0.8666" );
 
-extern ConVar fear_style_movement;
+extern ConVar hl2r_fear_style_movement;
+extern ConVar hl2r_episodic_flashlight;
 
 ConVar sv_stickysprint("sv_stickysprint", "0", FCVAR_ARCHIVE | FCVAR_ARCHIVE_XBOX);
 
-#define	FLASH_DRAIN_TIME	 1.1111	// 100 units / 90 secs
-#define	FLASH_CHARGE_TIME	 50.0f	// 100 units / 2 secs
+//#define	FLASH_DRAIN_TIME	 1.1111	// 100 units / 90 secs
+#define	FLASH_DRAIN_TIME	 5	// 100 units / 20 secs
+//#define	FLASH_CHARGE_TIME	 50.0f	// 100 units / 2 secs
+#define	FLASH_CHARGE_TIME	 28.0f	// 100 units / 3.5 secs
 
 
 //==============================================================================================
@@ -160,11 +163,14 @@ static impactdamagetable_t gCappedPlayerImpactDamageTable =
 };
 
 // Flashlight utility
-bool g_bCacheLegacyFlashlightStatus = true;
-bool g_bUseLegacyFlashlight;
+//bool g_bCacheLegacyFlashlightStatus = true;
+//bool g_bUseLegacyFlashlight;
 bool Flashlight_UseLegacyVersion( void )
 {
-	// If this is the first run through, cache off what the answer should be (cannot change during a session)
+	if ( hl2r_episodic_flashlight.GetBool() )
+		return false;
+	
+/* 	// If this is the first run through, cache off what the answer should be (cannot change during a session)
 	if ( g_bCacheLegacyFlashlightStatus )
 	{
 		char modDir[MAX_PATH];
@@ -180,10 +186,12 @@ bool Flashlight_UseLegacyVersion( void )
 					   !Q_strcmp( modDir, "hl2_mirrored" ));
 
 		g_bCacheLegacyFlashlightStatus = false;
-	}
-
+	} */
+	
 	// Return the results
-	return g_bUseLegacyFlashlight;
+	//return g_bUseLegacyFlashlight;
+	
+	return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -547,7 +555,7 @@ void CHL2_Player::HandleSpeedChanges( void )
 	
 	if ( !bIsSprinting && !bWantSprint && !bIsWalking && !bWantWalking )
 	{
-		if ( !fear_style_movement.GetBool() )
+		if ( !hl2r_fear_style_movement.GetBool() )
 		{
 			SetMaxSpeed( HL2_NORM_SPEED );
 		}
@@ -750,9 +758,10 @@ void CHL2_Player::PreThink(void)
 		return;
 	}
 
-#ifdef HL2_EPISODIC
-	CheckFlashlight();
-#endif	// HL2_EPISODIC
+//#ifdef HL2_EPISODIC
+	if ( hl2r_episodic_flashlight.GetBool() )
+		CheckFlashlight();
+//#endif	// HL2_EPISODIC
 
 	// So the correct flags get sent to client asap.
 	//
@@ -1155,9 +1164,26 @@ void CHL2_Player::Spawn(void)
 	InitSprinting();
 
 	// Setup our flashlight values
-#ifdef HL2_EPISODIC
-	m_HL2Local.m_flFlashBattery = 100.0f;
-#endif 
+// #ifdef HL2_EPISODIC
+	if ( hl2r_episodic_flashlight.GetBool() )
+	{
+		m_HL2Local.m_flFlashBattery = 100.0f;
+	}
+	else
+	{
+		m_HL2Local.m_flFlashBattery = -1.0f;
+	}
+// #endif 
+	
+	// Setup our rollspeed values
+	if ( !hl2r_fear_style_movement.GetBool() )
+	{
+		m_flRollSpeed = HL2_SPRINT_SPEED;
+	}
+	else
+	{
+		m_flRollSpeed = HL2_NORM_SPEED * 1.25f;
+	}
 
 	GetPlayerProxy();
 
@@ -1235,13 +1261,15 @@ void CHL2_Player::StartSprinting( void )
 	filter.UsePredictionRules();
 	EmitSound( filter, entindex(), "HL2Player.SprintStart" );
 	
-	if ( !fear_style_movement.GetBool() )
+	if ( !hl2r_fear_style_movement.GetBool() )
 	{
 		SetMaxSpeed( HL2_SPRINT_SPEED );
+		m_flRollSpeed = HL2_SPRINT_SPEED;
 	}
 	else
 	{
-		SetMaxSpeed( HL2_NORM_SPEED );
+		SetMaxSpeed( HL2_NORM_SPEED * 1.25f );
+		m_flRollSpeed = HL2_NORM_SPEED * 1.25f;
 	}
 	m_fIsSprinting = true;
 }
@@ -1256,7 +1284,7 @@ void CHL2_Player::StopSprinting( void )
 		SuitPower_RemoveDevice( SuitDeviceSprint );
 	}
 
-	if( IsSuitEquipped() && !fear_style_movement.GetBool() )
+	if( IsSuitEquipped() && !hl2r_fear_style_movement.GetBool() )
 	{
 		SetMaxSpeed( HL2_NORM_SPEED );
 	}
@@ -3280,9 +3308,15 @@ void CHL2_Player::UpdateClientData( void )
 	}
 
 	// Update Flashlight
-#ifdef HL2_EPISODIC
+//#ifdef HL2_EPISODIC
 	if ( Flashlight_UseLegacyVersion() == false )
 	{
+		if ( SuitPower_RemoveDevice( SuitDeviceFlashlight ) )
+		{
+			m_HL2Local.m_flFlashBattery = 0.0f;
+		}
+		
+		
 		if ( FlashlightIsOn() && sv_infinite_aux_power.GetBool() == false )
 		{
 			m_HL2Local.m_flFlashBattery -= FLASH_DRAIN_TIME * gpGlobals->frametime;
@@ -3303,9 +3337,12 @@ void CHL2_Player::UpdateClientData( void )
 	}
 	else
 	{
+		if ( FlashlightIsOn() && !SuitPower_IsDeviceActive(SuitDeviceFlashlight) )
+			SuitPower_AddDevice( SuitDeviceFlashlight );
+		
 		m_HL2Local.m_flFlashBattery = -1.0f;
 	}
-#endif // HL2_EPISODIC
+//#endif // HL2_EPISODIC
 
 	BaseClass::UpdateClientData();
 }

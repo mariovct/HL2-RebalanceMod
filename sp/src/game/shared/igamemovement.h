@@ -66,6 +66,9 @@ public:
 	Vector			m_outWishVel;		// This is where you tried 
 	Vector			m_outJumpVel;		// This is your jump velocity
 
+	Vector			m_vecSmoothedVelocity;
+	float			m_flRollSpeed;
+	
 	// Movement constraints	(radius 0 means no constraint)
 	Vector			m_vecConstraintCenter;
 	float			m_flConstraintRadius;

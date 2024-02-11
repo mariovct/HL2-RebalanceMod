@@ -3322,6 +3322,11 @@ void C_BaseAnimating::ProcessMuzzleFlashEvent()// bookmark
 			vAttachment += vAng * 2;
 			
 			dlight_t *dl = effects->CL_AllocDlight ( index );
+			
+			extern ConVar hl2r_dynamic_light_level;
+			if ( hl2r_dynamic_light_level.GetInt() == 2 ) // None
+				dl = effects->CL_AllocElight ( index );
+			
 			dl->origin = vAttachment;
 			dl->color.r = m_iMuzzleFlashColorR;
 			dl->color.g = m_iMuzzleFlashColorG;

@@ -5,6 +5,8 @@ using namespace vgui;
 #include <vgui_controls/PropertySheet.h>
 #include <vgui_controls/CheckButton.h>
 #include <vgui_controls/Button.h>
+#include <vgui_controls/ComboBox.h>
+#include <vgui_controls/Slider.h>
 #include "ienginevgui.h"
 #include "hl2r_options.h"
 //------------------------------------------------------------------------------
@@ -45,7 +47,7 @@ void CSubOptionsGameHL2R::OnCommand(const char* pcCommand)
 	BaseClass::OnCommand(pcCommand);
 	if (!Q_stricmp(pcCommand, "toggleall"))
 	{
-		bState = true;
+		bool bState = true;
 		
 		for ( int i = 0; i < ARRAYSIZE(g_NewButton); i++ )
 		{
@@ -56,19 +58,75 @@ void CSubOptionsGameHL2R::OnCommand(const char* pcCommand)
 		for ( int i = 0; i < ARRAYSIZE(g_NewButton); i++ )
 		{
 			g_NewButton[i].Button->SetSelected(bState);
-			
-			ConVarRef var( g_NewButton[i].pConVar );
-			var.SetValue( bState );
 		}
 	}
 }
 //------------------------------------------------------------------------------
-// Purpose : HL2R's Visual options page
+// Purpose : HL2R's Misc options page
 //------------------------------------------------------------------------------
-/* CSubOptionsVisualsHL2R::CSubOptionsVisualsHL2R(vgui::Panel* parent) : PropertyPage(parent, NULL)
+CSubMiscOptionsHL2R::CSubMiscOptionsHL2R(vgui::Panel* parent) : PropertyPage(parent, NULL)
 {
-	LoadControlSettings("resource/ui/hl2r_optionssubvisuals.res");
-} */
+	for ( int i = 0; i < ARRAYSIZE(g_NewBox); i++ )
+	{
+		g_NewBox[i].Box = new ComboBox(this, g_NewBox[i].Name, MAX_BOX_ELEMENTS, false);
+		
+		for ( int j = 0; g_NewBox[i].ElementNames[j] != NULL; j++ )
+		{
+			g_NewBox[i].Box->AddItem( g_NewBox[i].ElementNames[j], NULL );
+		}
+		
+		ConVarRef var( g_NewBox[i].pConVar );
+		
+		int iValue = GetElementIndex( g_NewBox[i], var.GetInt() );
+		g_NewBox[i].Box->ActivateItem( iValue );
+	}
+	
+	viewRollSlider = new Slider(this, "viewRollSlider");
+	viewRollSlider->SetRange(0, 10); viewRollSlider->SetNumTicks(10);
+	
+	ConVarRef var( "hl2r_rollangle" );
+	viewRollSlider->SetValue(var.GetFloat());
+		
+	LoadControlSettings("resource/ui/hl2r_optionssubmisc.res");
+} 
+
+void CSubMiscOptionsHL2R::OnApplyChanges()
+{
+	for ( int i = 0; i < ARRAYSIZE(g_NewBox); i++ )
+	{
+		int iValue = GetElementIndex( g_NewBox[i], g_NewBox[i].Box->GetActiveItem() );
+		
+		ConVarRef var( g_NewBox[i].pConVar );
+		var.SetValue(iValue);
+	}
+	
+	ConVarRef var( "hl2r_rollangle" );
+	var.SetValue(viewRollSlider->GetValue());
+}
+
+void CSubMiscOptionsHL2R::OnControlModified()
+{
+	PostActionSignal(new KeyValues("ApplyButtonEnable"));
+}
+
+int CSubMiscOptionsHL2R::GetElementIndex( BoxButton_t mBox, int iElement )
+{
+	int element = iElement;
+		
+	// Handle reversed index's.
+	if ( mBox.bReversedIndexes )
+	{
+		int iNumElements = -1;
+		for ( int i = 0; mBox.ElementNames[i] != NULL; i++ )
+		{
+			iNumElements++;
+		}
+			
+		element = iNumElements - element;
+	}
+	
+	return element;
+}
 //------------------------------------------------------------------------------
 // Purpose : HL2R's Options panel
 //------------------------------------------------------------------------------
@@ -84,8 +142,8 @@ CHL2RMenu::CHL2RMenu(vgui::VPANEL parent) : BaseClass(NULL, "HL2RMenu")
 	m_pSubOptionsGameHL2R = new CSubOptionsGameHL2R(this);
 	AddPage(m_pSubOptionsGameHL2R, "#hl2r_options_game");
 
-/* 	m_pSubOptionsEffectsHL2R = new CSubOptionsVisualsHL2R(this);
-	AddPage(m_pSubOptionsEffectsHL2R, "#hl2r_options_visuals"); */
+ 	m_pSubMiscOptionsHL2R = new CSubMiscOptionsHL2R(this);
+	AddPage(m_pSubMiscOptionsHL2R, "#hl2r_options_misc");
 	
 	SetApplyButtonVisible(true);
 	GetPropertySheet()->SetTabWidth(168);

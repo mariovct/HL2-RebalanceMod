@@ -313,20 +313,15 @@ CAI_BaseNPC *CAI_Squad::SquadMemberCanSee( const Vector &vecLocation, float flDi
 
 //-------------------------------------
 
-CAI_BaseNPC *CAI_Squad::SquadMemberGoalInRange( const Vector &vecLocation, float flDist )
+CAI_BaseNPC *CAI_Squad::SquadMemberPathInRange( const Vector &vecLocation, float flDist )
 {
 	for (int i = 0; i < m_SquadMembers.Count(); i++)
 	{
-		DevMsg("1");
-		if ( m_SquadMembers[i]->GetNavigator()->GetPath() != NULL )
-		{
-			DevMsg("2");
-			Vector VecGoalPos = m_SquadMembers[i]->GetNavigator()->GetGoalPos();
-			NDebugOverlay::Box(  VecGoalPos, Vector(10,10,10), Vector(10,10,10), 255, 0, 0, 64, 10.0 );
-			
-			if (m_SquadMembers[i] != NULL && (vecLocation - VecGoalPos ).Length2D() <= flDist)
-				return m_SquadMembers[i];
-		}
+		if ( !m_SquadMembers[i]->GetNavigator()->GetPath() )
+			continue;
+		
+		if ( m_SquadMembers[i]->GetNavigator()->IsPointAlongPath( vecLocation, flDist ) )
+			return m_SquadMembers[i];
 	}
 	return NULL;
 }

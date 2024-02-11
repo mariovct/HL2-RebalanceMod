@@ -42,7 +42,7 @@ ConVar sk_plr_weapon_ar2_alt_fire_speed( "sk_plr_weapon_ar2_alt_fire_speed", "10
 ConVar sk_npc_weapon_ar2_alt_fire_speed( "sk_npc_weapon_ar2_alt_fire_speed", "1000" );
 
 
-extern ConVar realistic_reload;
+extern ConVar hl2r_realistic_reload;
 //=========================================================
 //=========================================================
 
@@ -156,7 +156,7 @@ int	CWeaponAR2::GetBurstSize( void )
 //-----------------------------------------------------------------------------
 void CWeaponAR2::ItemPostFrame( void )
 {
-	m_bMagazineStyleReloads = realistic_reload.GetBool() ? true : false;
+	m_bMagazineStyleReloads = hl2r_realistic_reload.GetBool() ? true : false;
 	
 	m_iFireMode = sk_weapon_ar2_burst_fire.GetBool() ? FIREMODE_3RNDBURST : FIREMODE_FULLAUTO;
 	

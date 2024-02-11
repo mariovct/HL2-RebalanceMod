@@ -360,6 +360,7 @@ public:
 	bool				CurWaypointIsGoal() const;
 
 	bool				GetPointAlongPath( Vector *pResult, float distance, bool fReducibleOnly = false );
+	bool 				IsPointAlongPath( const Vector &pos, float dist );
 
 	float				GetPathDistanceToGoal();
 	float				GetPathTimeToGoal();

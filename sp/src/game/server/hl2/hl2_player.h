@@ -20,6 +20,7 @@ class CPropCombineBall;
 
 extern int TrainSpeed(int iSpeed, int iMax);
 extern void CopyToBodyQue( CBaseAnimating *pCorpse );
+extern ConVar hl2r_shorter_sprint;
 
 #define ARMOR_DECAY_TIME 3.5f
 
@@ -65,9 +66,9 @@ public:
 	int		GetDeviceID( void ) const { return m_bitsDeviceID; }
 	float	GetDeviceDrainRate( void ) const
 	{	
-		/* if( g_pGameRules->GetSkillLevel() == SKILL_EASY && hl2_episodic.GetBool() && !(GetDeviceID()&bits_SUIT_DEVICE_SPRINT) )
-			return m_flDrainRate * 0.5f;
-		else */
+		if( GetDeviceID()&bits_SUIT_DEVICE_SPRINT && hl2r_shorter_sprint.GetBool() )
+			return m_flDrainRate * 2.5f;
+		else
 			return m_flDrainRate; 
 	}
 };

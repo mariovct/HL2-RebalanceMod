@@ -41,8 +41,8 @@ public:
 	bool	m_bDisplayReticle;
 	bool	m_bStickyAutoAim;
 	bool	m_bAutoAimTarget;
-#ifdef HL2_EPISODIC
 	float	m_flFlashBattery;
+#ifdef HL2_EPISODIC
 	Vector	m_vecLocatorOrigin;
 #endif
 

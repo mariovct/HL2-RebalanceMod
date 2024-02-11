@@ -180,6 +180,10 @@ void C_RollerMine::Simulate( void )
 	if ( gpGlobals->frametime <= 0.0f )
 		return;
 	
+	extern ConVar hl2r_dynamic_light_level;
+	if ( hl2r_dynamic_light_level.GetInt() != 0 ) // VFX + Entities
+		return;
+	
 	//Normal
 	if ( m_bIsOpen && !m_bHackedByAlyx && !m_bPowerDown )
 	{

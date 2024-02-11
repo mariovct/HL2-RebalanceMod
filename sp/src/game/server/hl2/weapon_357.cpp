@@ -24,7 +24,7 @@
 #include "tier0/memdbgon.h"
 
 ConVar sk_deagle_style_357("sk_deagle_style_357", "0" );
-extern ConVar 	realistic_reload;
+extern ConVar 	hl2r_realistic_reload;
 extern ConVar sk_alternate_recoil;
 
 //-----------------------------------------------------------------------------
@@ -278,7 +278,7 @@ void CWeapon357::PrimaryAttack( void )
 }
 void CWeapon357::ItemPostFrame( void )
 { 
-	m_bMagazineStyleReloads = realistic_reload.GetBool() ? true : false; 
+	m_bMagazineStyleReloads = hl2r_realistic_reload.GetBool() ? true : false; 
 	
 	CBasePlayer *pOwner = ToBasePlayer( GetOwner() );
 	

@@ -67,7 +67,7 @@ ConVar physcannon_right_turrets( "physcannon_right_turrets", "0" );
 
 ConVar sk_physcannon_combineball_launch_speed( "sk_physcannon_combineball_launch_speed", "1000" );
 
-extern ConVar fear_style_movement;
+extern ConVar hl2r_fear_style_movement;
 extern ConVar hl2_normspeed;
 extern ConVar hl2_walkspeed;
 
@@ -2438,7 +2438,7 @@ bool CWeaponPhysCannon::AttachObject( CBaseEntity *pObject, const Vector &vPosit
 #endif
 		pOwner->EnableSprint( false );
 		
-		bool m_bFearSprint = fear_style_movement.GetBool();
+		bool m_bFearSprint = hl2r_fear_style_movement.GetBool();
 
 		float	loadWeight = ( 1.0f - GetLoadPercentage() );
 		float	maxSpeed = hl2_walkspeed.GetFloat() + ( (  ( m_bFearSprint ? hl2_walkspeed.GetFloat() : hl2_normspeed.GetFloat() ) - hl2_walkspeed.GetFloat() ) * loadWeight );
@@ -2889,7 +2889,7 @@ void CWeaponPhysCannon::DetachObject( bool playSound, bool wasLaunched )
 	{
 		pOwner->EnableSprint( true );
 		
-		if ( !fear_style_movement.GetBool() )
+		if ( !hl2r_fear_style_movement.GetBool() )
 		{
 			pOwner->SetMaxSpeed( hl2_normspeed.GetFloat() );
 		}

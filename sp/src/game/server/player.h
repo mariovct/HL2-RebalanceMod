@@ -993,9 +993,11 @@ protected: //used to be private, but need access for portal mod (Dave Kircher)
 	IPhysicsObject				*m_pShadowStand;
 	IPhysicsObject				*m_pShadowCrouch;
 	Vector						m_oldOrigin;
-	Vector						m_vecSmoothedVelocity;
+	CNetworkVector(	m_vecSmoothedVelocity );
 	bool						m_touchedPhysObject;
 	bool						m_bPhysicsWasFrozen;
+	
+	CNetworkVar( float,	m_flRollSpeed );
 
 private:
 

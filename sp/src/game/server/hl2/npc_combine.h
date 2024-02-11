@@ -124,6 +124,7 @@ public:
 	bool			IsUsingPathfindingVariant( int variant ) { return m_iPathfindingVariant == variant; }
 
 	bool			IsRunningApproachEnemySchedule();
+	bool			IsRunningFleeSchedule();
 	bool			CanOccupyAttackSlot();
 
 	// -------------
@@ -140,7 +141,6 @@ public:
 	void			AnnounceEnemyKill( CBaseEntity *pEnemy );
 
 	void			NotifyDeadFriend( CBaseEntity* pFriend );
-	void 			UpdateLeadScale( CBaseCombatWeapon *pWeapon );
 
 	virtual float	HearingSensitivity( void ) { return 1.0; };
 	int				GetSoundInterests( void );
@@ -247,6 +247,11 @@ private:
 
 	// Should we charge the player?
 	bool ShouldChargePlayer();
+	
+	bool OverrideAimOnMoveAndShoot( void );
+	
+	// Delay any advances our squad might do.
+	void DelaySquadAdvances( float flTime );
 
 	// Chase the enemy, updating the target position as the player moves
 	void StartTaskChaseEnemyContinuously( const Task_t *pTask );
@@ -293,8 +298,7 @@ private:
 	int				m_nShots;
 	float			m_flShotDelay;
 	float			m_flStopMoveShootTime;
-	float			m_flLeadScale;
-	float			m_flLeadScaleUpdateTime;
+	float			m_flDelayAttacksTime;
 
 	CAI_Sentence< CNPC_Combine > m_Sentences;
 

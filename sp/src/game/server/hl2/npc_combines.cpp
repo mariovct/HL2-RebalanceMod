@@ -43,7 +43,8 @@ extern ConVar sk_plr_num_shotgun_pellets;
 //Whether or not the combine should spawn health on death
 ConVar	combine_spawn_health( "combine_spawn_health", "1" );
 
-ConVar	promotion( "promotion", "0" );
+extern ConVar hl2r_random_weapons;
+extern ConVar hl2r_enemy_promotion;
 
 LINK_ENTITY_TO_CLASS( npc_combine_s, CNPC_CombineS );
 
@@ -58,37 +59,30 @@ extern Activity ACT_WALK_MARCH;
 //-----------------------------------------------------------------------------
 void CNPC_CombineS::Spawn( void )
 {
-	// We have to do this because our weapon is only equipped after we're spawned.
-	bool bHasShotgun = m_spawnEquipment != NULL_STRING && !FStrEq(STRING(m_spawnEquipment), "weapon_shotgun");
-		
-	if( FStrEq(STRING(gpGlobals->mapname), "d3_breen_01")  || ( promotion.GetBool() && bHasShotgun ) )
+	if( FStrEq(STRING(gpGlobals->mapname), "d3_breen_01") )
 	{
 		SetModelName( MAKE_STRING( "models/combine_super_soldier.mdl" ) );
+	}
+	
+	const char *pModelName = STRING( GetModelName() );
+	
+	bAlreadyElite = false;
+	
+	// Don't do this if we're already an elite.
+	if ( Q_stricmp( pModelName, "models/combine_super_soldier.mdl" ) )
+	{
+		if ( hl2r_enemy_promotion.GetBool() )
+			DoPromotion();
+	}
+	else
+	{
+		bAlreadyElite = true;
 	}
 	
 	Precache();
 	SetModel( STRING( GetModelName() ) );
 	
-	if( IsPrisonGuard() )
-	{
-		if ( FStrEq(STRING(m_spawnEquipment), "weapon_shotgun") )
-		{
-			m_spawnEquipment = MAKE_STRING( "weapon_357" );
-		}
-		
-		else if ( FStrEq(STRING(m_spawnEquipment), "weapon_ar2") )
-		{
-			m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
-		}	
-		else if ( FStrEq(STRING(m_spawnEquipment), "weapon_smg1") )
-		{
-			// Use these as introductory maps
-			if ( FStrEq(STRING(gpGlobals->mapname), "d2_coast_12") || FStrEq(STRING(gpGlobals->mapname), "d2_prison_01") ) 
-			{
-				m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
-			}
-		}	
-	}
+	HandleSpawnEquipment();
 
 	if( IsElite() )
 	{
@@ -446,7 +440,135 @@ bool CNPC_CombineS::IsHeavyDamage( const CTakeDamageInfo &info )
 
 	return BaseClass::IsHeavyDamage( info );
 }
-
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CNPC_CombineS::HandleSpawnEquipment( void )
+{
+	if ( hl2r_random_weapons.GetBool() )
+	{
+		// Normal elites use AR2's, whose alt-fire is used
+		// in some scripted sequences.
+		if ( bAlreadyElite )
+			return;
+		
+		// Elites.
+		if ( IsElite() )
+		{
+			switch ( random->RandomInt( 0, 4 ) )
+			{
+			case 0:
+				m_spawnEquipment = MAKE_STRING( "weapon_smg1" );
+				break;
+			case 1:
+				m_spawnEquipment = MAKE_STRING( "weapon_ar2" );
+				break;
+			case 2:
+				m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
+				break;
+			case 3:
+				m_spawnEquipment = MAKE_STRING( "weapon_shotgun" );
+				break;
+			case 4:
+				m_spawnEquipment = MAKE_STRING( "weapon_357" );
+				break;
+			}
+		}
+		
+		// Shotgunners.
+		else if ( FStrEq(STRING(m_spawnEquipment), "weapon_shotgun") )
+		{
+			if ( random->RandomInt( 0, 1 ) == 0 )
+				m_spawnEquipment = MAKE_STRING( "weapon_357" );
+			else
+				m_spawnEquipment = MAKE_STRING( "weapon_shotgun" );
+		}
+		
+		// Standard prison guards.
+		else if ( IsPrisonGuard() )
+		{
+			if ( random->RandomInt( 0, 1 ) == 0 )
+				m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
+			else
+				m_spawnEquipment = MAKE_STRING( "weapon_smg1" );
+		}
+		
+		// Standard soldiers
+		else
+		{
+			switch ( random->RandomInt( 0, 2 ) )
+			{
+			case 0:
+				m_spawnEquipment = MAKE_STRING( "weapon_smg1" );
+				break;
+			case 1:
+				m_spawnEquipment = MAKE_STRING( "weapon_ar2" );
+				break;
+			case 2:
+				m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
+				break;
+			}
+		}
+	}
+	else if( IsPrisonGuard() )
+	{
+		// Prison shotgunners use Revolvers!
+		if ( FStrEq(STRING(m_spawnEquipment), "weapon_shotgun") )
+		{
+			m_spawnEquipment = MAKE_STRING( "weapon_357" );
+		}
+		
+		else if ( FStrEq(STRING(m_spawnEquipment), "weapon_ar2") )
+		{
+			m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
+		}	
+		else if ( FStrEq(STRING(m_spawnEquipment), "weapon_smg1") )
+		{
+			// Use these as introductory maps
+			if ( FStrEq(STRING(gpGlobals->mapname), "d2_coast_12") || FStrEq(STRING(gpGlobals->mapname), "d2_prison_01") ) 
+			{
+				m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
+			}
+		}	
+	}
+}
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CNPC_CombineS::DoPromotion( void )
+{
+	// Our model name
+	const char *pModelName = STRING( GetModelName() );
+	
+	// We have to do this because our weapon is only equipped after we're spawned.
+	bool bHasShotgun = ( FStrEq(STRING(m_spawnEquipment), "weapon_shotgun") || FStrEq(STRING(m_spawnEquipment), "weapon_357") );
+	
+	if ( !bHasShotgun )
+	{
+		if ( !Q_stricmp( pModelName, "models/combine_soldier_prisonguard.mdl" )  )
+		{
+			if ( FStrEq(STRING(m_spawnEquipment), "weapon_smg1") )
+			{
+				SetModelName( MAKE_STRING( "models/combine_super_soldier.mdl" ) );
+				if ( random->RandomInt(0, 1) < 1 )
+				{
+					m_spawnEquipment = MAKE_STRING( "weapon_ar2" );
+				}
+			}
+		}
+		else 
+		{
+			if ( FStrEq(STRING(m_spawnEquipment), "weapon_ar2") )
+			{
+				SetModelName( MAKE_STRING( "models/combine_super_soldier.mdl" ) );
+				if ( random->RandomInt(0, 1) < 1 )
+				{
+					m_spawnEquipment = MAKE_STRING( "weapon_smg1" );
+				}
+			}
+		}
+	}
+}
 #if HL2_EPISODIC
 //-----------------------------------------------------------------------------
 // Purpose: Translate base class activities into combot activites
@@ -461,8 +583,6 @@ Activity CNPC_CombineS::NPC_TranslateActivity( Activity eNewActivity )
 
 	return BaseClass::NPC_TranslateActivity( eNewActivity );
 }
-
-
 //---------------------------------------------------------
 // Save/Restore
 //---------------------------------------------------------

@@ -37,6 +37,8 @@ IMPLEMENT_CLIENTCLASS_DT( C_PropCombineBall, DT_PropCombineBall, CPropCombineBal
 	RecvPropBool( RECVINFO( m_bLaunched ) ),
 END_RECV_TABLE()
 
+extern ConVar hl2r_dynamic_light_level;
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -327,7 +329,8 @@ void ExplosionLight( const CEffectData &data )
 //-----------------------------------------------------------------------------
 void CombineBallImpactCallback( const CEffectData &data )
 {
-	ImpactLight( data );
+	if ( hl2r_dynamic_light_level.GetInt() == 0 ) // VFX + Entities
+		ImpactLight( data );
 	
 	// Quick flash
 	FX_AddQuad( data.m_vOrigin,
@@ -373,7 +376,9 @@ DECLARE_CLIENT_EFFECT( "cball_bounce", CombineBallImpactCallback );
 //-----------------------------------------------------------------------------
 void CombineBallExplosionCallback( const CEffectData &data )
 {
-	ExplosionLight( data );
+	if ( hl2r_dynamic_light_level.GetInt() == 0 ) // VFX + Entities
+		ExplosionLight( data );
+		
 	Vector normal(0,0,1);
 
 	// Throw sparks

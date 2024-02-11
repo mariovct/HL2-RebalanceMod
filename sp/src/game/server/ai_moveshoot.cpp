@@ -103,6 +103,11 @@ bool CAI_MoveAndShootOverlay::CanAimAtEnemy()
 	{
 		result = true;
 	}
+	
+	if ( pOuter->OverrideAimOnMoveAndShoot() )
+	{
+		result = true;
+	}
 
 	// If we don't have a weapon, stop
 	// This catches NPCs who holster their weapons while running

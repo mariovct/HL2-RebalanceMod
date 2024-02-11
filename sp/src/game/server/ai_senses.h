@@ -85,7 +85,7 @@ public:
 
 	CSound *		GetFirstHeardSound( AISoundIter_t *pIter );
 	CSound *		GetNextHeardSound( AISoundIter_t *pIter );
-	CSound *		GetClosestSound( bool fScent = false, int validTypes = ALL_SOUNDS | ALL_SCENTS, bool bUsePriority = true );
+	CSound *		GetClosestSound( bool fScent = false, int validTypes = ALL_SOUNDS | ALL_SCENTS, bool bUsePriority = true, Vector vecPos = vec3_origin );
 
 	bool 			CanHearSound( CSound *pSound );
 

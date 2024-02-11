@@ -22,7 +22,7 @@
 #include "tier0/memdbgon.h"
 
 #define ITEM_PICKUP_BOX_BLOAT		24
-extern ConVar manual_pickup;
+extern ConVar hl2r_manual_pickup;
 
 class CWorldItem : public CBaseAnimating
 {
@@ -356,7 +356,7 @@ bool UTIL_ItemCanBeTouchedByPlayer( CBaseEntity *pItem, CBasePlayer *pPlayer )
 	IPhysicsObject *pPhysObj = pItem->VPhysicsGetObject();
 	if ( pPhysObj != NULL )
 	{
-		if ( ( pPhysObj->GetGameFlags() != FVPHYSICS_PLAYER_HELD ) && manual_pickup.GetBool() )
+		if ( ( pPhysObj->GetGameFlags() != FVPHYSICS_PLAYER_HELD ) && hl2r_manual_pickup.GetBool() )
 		{
 			// Don't force manually picking up weapons if we're just starting a chapter!
 			if ( gpGlobals->curtime > 5 )

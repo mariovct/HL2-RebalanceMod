@@ -1202,6 +1202,43 @@ bool CAI_Navigator::GetPointAlongPath( Vector *pResult, float distance, bool fRe
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: More advanced way of dealing with combines throwing grenades
+// that makes them less prone to blowing themselves up.
+//-----------------------------------------------------------------------------
+bool CAI_Navigator::IsPointAlongPath( const Vector &pos, float dist )
+{
+	// No path, use our standing position.
+	if ( !GetPath()->GetCurWaypoint() )
+	{
+		if ( ( GetAbsOrigin() - pos ).Length() < dist )
+			return true;
+		
+		return false;
+	}
+
+	// Our current path.
+	AI_Waypoint_t *pCurWaypoint	 = GetPath()->GetCurWaypoint();
+	AI_Waypoint_t *pEndPoint 	 = pCurWaypoint;
+	
+	//NDebugOverlay::Box( pos, -Vector(10,10,10), Vector(10,10,10), 255, 255, 255, 255, 5 );
+	
+	// Iterate through our path points and see if they're too close for comfort.
+	while ( pEndPoint->GetNext() )
+	{
+		float fNodeDist = ( pEndPoint->GetPos() - pos ).Length();
+		if ( fNodeDist < dist )
+		{
+			//NDebugOverlay::Box( pEndPoint->GetPos(), -Vector(20,20,20), Vector(20,20,20), 255, 0, 0, 255, 5 );
+			return true;
+		}
+		
+		pEndPoint = pEndPoint->GetNext();
+	}
+	
+	return false;
+}
+
+//-----------------------------------------------------------------------------
 
 float CAI_Navigator::GetPathDistanceToGoal()
 {

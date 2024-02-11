@@ -438,6 +438,8 @@ public:
 	int				m_nButtons;
 
 	CUserCmd		*m_pCurrentCommand;
+	
+	Vector			m_vecSmoothedVelocity;
 
 	// Movement constraints
 	EHANDLE			m_hConstraintEntity;
@@ -487,6 +489,8 @@ protected:
 	float			m_flFreezeFrameDistance;
 	bool			m_bWasFreezeFraming; 
 	float			m_flDeathTime;		// last time player died
+	
+	float			m_flRollSpeed;
 
 	float			m_flStepSoundTime;
 	bool			m_IsFootprintOnLeft;

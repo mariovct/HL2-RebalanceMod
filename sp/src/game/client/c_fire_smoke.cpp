@@ -381,7 +381,11 @@ void C_EntityFlame::Simulate( void )
 {
 	if ( gpGlobals->frametime <= 0.0f )
 		return;
-
+	
+	extern ConVar hl2r_dynamic_light_level;
+	if ( hl2r_dynamic_light_level.GetInt() == 2 ) // None
+		return;
+		
 		dlight_t *dl = effects->CL_AllocDlight ( index );
 		dl->origin = GetAbsOrigin();
 		dl->color.r = 255;

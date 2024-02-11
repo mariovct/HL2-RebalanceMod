@@ -282,6 +282,10 @@ DECLARE_CLIENT_EFFECT( "HelicopterImpact", ImpactHelicopterCallback );
 void Grenade_Blip( ClientEntityHandle_t hEntity, int attachmentIndex )
 {
 	VPROF_BUDGET( "Grenade_Blip", VPROF_BUDGETGROUP_PARTICLE_RENDERING );
+	
+	extern ConVar hl2r_dynamic_light_level;
+	if ( hl2r_dynamic_light_level.GetInt() != 0 ) // VFX + Entities
+		return;
 
 	// Grab the origin out of the transform for the attachment
 	// If the client hasn't seen this entity yet, bail.

@@ -25,6 +25,8 @@ ConVar sk_plr_dmg_fraggrenade	( "sk_plr_dmg_fraggrenade","0");
 ConVar sk_npc_dmg_fraggrenade	( "sk_npc_dmg_fraggrenade","0");
 ConVar sk_fraggrenade_radius	( "sk_fraggrenade_radius", "0");
 
+extern ConVar sk_plr_grenade_timer;
+
 #define GRENADE_MODEL "models/Weapons/w_grenade.mdl"
 
 class CGrenadeFrag : public CBaseGrenade
@@ -73,6 +75,7 @@ protected:
 	bool	m_inSolid;
 	bool	m_combineSpawned;
 	bool	m_punted;
+	float	m_flNextDangerSound;
 };
 
 extern ConVar sk_plr_grenade_is_cookable;
@@ -88,6 +91,7 @@ BEGIN_DATADESC( CGrenadeFrag )
 	DEFINE_FIELD( m_inSolid, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_combineSpawned, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_punted, FIELD_BOOLEAN ),
+	DEFINE_FIELD( m_flNextDangerSound, FIELD_TIME ),
 	
 	// Function Pointers
 	DEFINE_THINKFUNC( DelayThink ),
@@ -335,20 +339,23 @@ void CGrenadeFrag::DelayThink()
 		Detonate();
 		return;
 	}
+	
+	if( !m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime )
+	{
+		m_bHasWarnedAI = true;
+	}
+	
+	float flDetonatePerc = 1.0f - ( ( m_flDetonateTime - gpGlobals->curtime ) / sk_plr_grenade_timer.GetFloat() );
+	float m_fDangerRadius = (float)sk_fraggrenade_radius.GetInt() * flDetonatePerc;
+	
+	if ( gpGlobals->curtime > m_flNextDangerSound )
+	{
+		CSoundEnt::InsertSound( SOUND_DANGER, GetAbsOrigin(), m_fDangerRadius, 0.3, this );
+		m_flNextDangerSound = gpGlobals->curtime + 0.3;
+		//NDebugOverlay::Sphere( GetAbsOrigin(), vec3_angle, m_fDangerRadius, 255, 0, 0, 0, true, 0.3 );
+	}
 
-	if( !m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime )
-	{
-		m_bHasWarnedAI = true;
-	}
-	
-	if( !m_bHasWarnedAI && gpGlobals->curtime >= m_flWarnAITime )
-	{
-#if !defined( CLIENT_DLL )
-		CSoundEnt::InsertSound ( SOUND_DANGER, GetAbsOrigin(), sk_fraggrenade_radius.GetInt(), 1.5, this );
-#endif
-		m_bHasWarnedAI = true;
-	}
-	
+
 	if( gpGlobals->curtime > m_flNextBlipTime )
 	{
 		BlipSound();		

@@ -17,6 +17,9 @@
 #include "entitylist.h"
 #include "ai_hint.h"
 #include "IEffects.h"
+#include "engine/IEngineSound.h"
+#include "soundent.h"
+#include "ai_senses.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -126,6 +129,15 @@ bool CAI_BaseNPC::IsValidCover( const Vector &vecCoverLocation, CAI_Hint const *
 	{
 		return false;
 	}
+	
+	// Don't walk straight into any danger sounds!
+	CSound *pSound = GetSenses()->GetClosestSound( false, ALL_SOUNDS, true, vecCoverLocation );
+	
+	if ( pSound && pSound->SoundType() & SOUND_DANGER )
+	{
+		if ( ( pSound->GetSoundReactOrigin() - vecCoverLocation ).Length() < 250  ) 
+			return false; //HACK: We're using the default grenade radius for this check when it should really be more robust.
+	}
 
 	return true;
 }
@@ -147,6 +159,16 @@ bool CAI_BaseNPC::IsValidShootPosition( const Vector &vecShootLocation, CAI_Node
 				return false;
 		}
 	}
+	
+	// Don't walk straight into any danger sounds!
+	CSound *pSound = GetSenses()->GetClosestSound( false, ALL_SOUNDS, true, vecShootLocation );
+	
+	if ( pSound && pSound->SoundType() & SOUND_DANGER )
+	{
+		if ( ( pSound->GetSoundReactOrigin() - vecShootLocation ).Length() < 250  ) 
+			return false; //HACK: We're using the default grenade radius for this check when it should really be more robust.
+	}
+
 
 	return true;
 }

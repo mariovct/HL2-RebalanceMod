@@ -306,9 +306,9 @@ private:
 	
 	// Can we become an Elite?
 	bool CanBecomeElite( void );
-	
-	void UpdateLeadScale( CBaseCombatWeapon *pWeapon );
 	bool CanSupressEnemy( void );
+	
+	void HandleRandomSpawnEquipment( void );
 
 private:
 	enum
@@ -421,8 +421,6 @@ private:
 
 	float			m_flBatonChaseTime;
 	float			m_flBatonChaseCooldown;
-	float			m_flLeadScale;
-	float			m_flLeadScaleUpdateTime;
 	int				m_iPistolClips;		// How many clips the cop has in reserve
 	int				m_iManhacks;		// How many manhacks the cop has
 	int				m_iOldClip1;

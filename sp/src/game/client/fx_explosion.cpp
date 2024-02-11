@@ -190,7 +190,10 @@ void C_BaseExplosionEffect::Create( const Vector &position, float force, float s
 	}
 
 	CreateDebris();
-	CreateDynamicLight();
+	
+	extern ConVar hl2r_dynamic_light_level;
+	if ( hl2r_dynamic_light_level.GetInt() != 2 ) // None
+		CreateDynamicLight();
 	CreateMisc();
 }
 

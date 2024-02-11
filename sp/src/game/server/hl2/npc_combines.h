@@ -46,6 +46,11 @@ public:
 
 private:
 	bool		ShouldHitPlayer( const Vector &targetDir, float targetDist );
+	
+	void		HandleSpawnEquipment( void );
+	void		DoPromotion( void );
+	
+	bool		bAlreadyElite;
 
 #if HL2_EPISODIC
 public:

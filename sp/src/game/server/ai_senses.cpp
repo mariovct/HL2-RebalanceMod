@@ -603,7 +603,7 @@ CSound* CAI_Senses::GetNextHeardSound( AISoundIter_t *pIter )
 
 //-----------------------------------------------------------------------------
 
-CSound *CAI_Senses::GetClosestSound( bool fScent, int validTypes, bool bUsePriority )
+CSound *CAI_Senses::GetClosestSound( bool fScent, int validTypes, bool bUsePriority, Vector vecPos )
 {
 	float flBestDist = MAX_COORD_RANGE*MAX_COORD_RANGE;// so first nearby sound will become best so far.
 	float flDist;
@@ -614,7 +614,7 @@ CSound *CAI_Senses::GetClosestSound( bool fScent, int validTypes, bool bUsePrior
 	CSound *pResult = NULL;
 	CSound *pCurrent = GetFirstHeardSound( &iter );
 
-	Vector earPosition = GetOuter()->EarPosition();
+	Vector earPosition = vecPos == vec3_origin ? GetOuter()->EarPosition() : vecPos;
 	
 	while ( pCurrent )
 	{

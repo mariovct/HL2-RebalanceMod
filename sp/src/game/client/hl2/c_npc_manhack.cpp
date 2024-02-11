@@ -196,6 +196,10 @@ void C_NPC_Manhack::Simulate( void )
 	if ( m_bIsDead )
 		return;
 	
+	extern ConVar hl2r_dynamic_light_level;
+	if ( hl2r_dynamic_light_level.GetInt() != 0 ) // VFX + Entities
+		return;
+	
 	if ( m_bIsEyeStunned )
 	{
 		dlight_t *dl = effects->CL_AllocDlight ( index );

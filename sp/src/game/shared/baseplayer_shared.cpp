@@ -1762,8 +1762,13 @@ void CBasePlayer::CalcViewRoll( QAngle& eyeAngles )
 {
 	if ( GetMoveType() == MOVETYPE_NOCLIP )
 		return;
+	
+	extern ConVar hl2r_rollangle;
+	
+	// Add a tiny bit of smoothness so that our view doesn't jerk when we strafe into a wall.
+	Vector velocity = ( m_vecSmoothedVelocity * 0.1 ) + ( GetAbsVelocity() * 0.9 );
 
-	float side = CalcRoll( GetAbsAngles(), GetAbsVelocity(), sv_rollangle.GetFloat(), sv_rollspeed.GetFloat() );
+	float side = CalcRoll( GetAbsAngles(), m_vecSmoothedVelocity, hl2r_rollangle.GetFloat(), m_flRollSpeed );
 	eyeAngles[ROLL] += side;
 }
 

@@ -67,7 +67,7 @@ const int HEADCRAB_MAX_JUMP_DIST = 256;
 #define HEADCRAB_BURN_SOUND_FREQUENCY 10
 
 ConVar g_debug_headcrab( "g_debug_headcrab", "0", FCVAR_CHEAT );
-extern ConVar explosive_crabs;
+extern ConVar hl2r_explosive_crabs;
 
 //------------------------------------
 // Spawnflags
@@ -2513,9 +2513,9 @@ void CHeadcrab::PainSound( const CTakeDamageInfo &info )
 //-----------------------------------------------------------------------------
 void CHeadcrab::DeathSound( const CTakeDamageInfo &info )
 {
-	if ( explosive_crabs.GetBool() )
+	if ( hl2r_explosive_crabs.GetBool() )
 	{
-		ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), this, 100, 196, true );
+		ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), this, 100, 160, true );
 	}
 	EmitSound( "NPC_HeadCrab.Die" );
 }
@@ -2633,9 +2633,9 @@ void CFastHeadcrab::PainSound( const CTakeDamageInfo &info )
 //-----------------------------------------------------------------------------
 void CFastHeadcrab::DeathSound( const CTakeDamageInfo &info )
 {
-	if ( explosive_crabs.GetBool() )
+	if ( hl2r_explosive_crabs.GetBool() )
 	{
-		ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), this, 100, 196, true );
+		ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), this, 100, 160, true );
 	}
 	EmitSound( "NPC_FastHeadcrab.Die" );
 }
@@ -3576,10 +3576,11 @@ void CBlackHeadcrab::PainSound( const CTakeDamageInfo &info )
 //-----------------------------------------------------------------------------
 void CBlackHeadcrab::DeathSound( const CTakeDamageInfo &info )
 {
-	if ( explosive_crabs.GetBool() )
+	if ( hl2r_explosive_crabs.GetBool() )
 	{
-		ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), this, 100, 196, true );
+		ExplosionCreate( GetAbsOrigin(), GetAbsAngles(), this, 100, 160, true );
 	}
+	
 	EmitSound( "NPC_BlackHeadcrab.Die" );
 }
 

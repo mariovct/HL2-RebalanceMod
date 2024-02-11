@@ -114,6 +114,8 @@ public:
 	void StopControl( void );
 	Vector GetTargetPosition()						{ return m_vTargetPosition; }
 	void SetTargetPosition( const Vector &vecPos )	{ m_vTargetPosition = vecPos; }
+	
+	bool CheckAmmoFull( void )	{ return m_nAmmoCount == 200; }
 
 	const float YawCenter() const { return m_yawCenter; }
 	const float YawCenterWorld() const { return m_yawCenterWorld; }

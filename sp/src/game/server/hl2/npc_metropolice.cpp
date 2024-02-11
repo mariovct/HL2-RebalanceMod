@@ -126,6 +126,8 @@ ConVar  metropolice_move_and_melee("metropolice_move_and_melee", "1" );
 ConVar  metropolice_charge("metropolice_charge", "0" );
 ConVar  metropolice_baton_switch("metropolice_baton_switch", "0" );
 
+extern ConVar  hl2r_random_weapons;
+
 // How many clips of pistol ammo a metropolice carries.
 #define METROPOLICE_NUM_CLIPS			5
 #define METROPOLICE_BURST_RELOAD_COUNT	20
@@ -216,9 +218,6 @@ BEGIN_DATADESC( CNPC_MetroPolice )
 	DEFINE_FIELD( m_flNextPainSoundTime, FIELD_TIME ),
 	DEFINE_FIELD( m_flNextLostSoundTime, FIELD_TIME ),
 	DEFINE_FIELD( m_nIdleChatterType, FIELD_INTEGER ),
-	
-	DEFINE_FIELD( m_flLeadScale, FIELD_FLOAT ),
-	DEFINE_FIELD( m_flLeadScaleUpdateTime, FIELD_TIME ),
 
 	DEFINE_FIELD( m_bSimpleCops, FIELD_BOOLEAN ),
 	DEFINE_FIELD( m_bIsElite, FIELD_BOOLEAN ),
@@ -588,19 +587,6 @@ void CNPC_MetroPolice::PrescheduleThink( void )
 		ClearCondition( COND_GOT_PUNTED );
 		SetSchedule( SCHED_METROPOLICE_PUNT_STUN );
 	}
-	
-	// Increase the current lead scale for every second our enemy isn't in view.
-	if ( m_flLeadScaleUpdateTime <= gpGlobals->curtime && GetEnemy() && HasCondition(COND_ENEMY_OCCLUDED) )
-	{
-		m_flLeadScale -= 12;
-		
-		m_flLeadScale = MAX( 0, m_flLeadScale );
-		m_flLeadScale = MIN( 100, m_flLeadScale );
-		
-	//	DevMsg("Current lead scale is: %f\n", m_flLeadScale );
-		
-		m_flLeadScaleUpdateTime	= gpGlobals->curtime + 1;
-	}
 }
 
 //-----------------------------------------------------------------------------
@@ -693,6 +679,9 @@ void CNPC_MetroPolice::Spawn( void )
 	}
 
 	Precache();
+	
+	if ( hl2r_random_weapons.GetBool() )
+		HandleRandomSpawnEquipment();
 
 #ifdef _XBOX
 	// Always fade the corpse
@@ -5154,7 +5143,6 @@ void CNPC_MetroPolice::RunTask( const Task_t *pTask )
 					}
 					else
 					{
-						UpdateLeadScale( GetActiveWeapon() );
 						OnRangeAttack1();
 						ResetIdealActivity( ACT_RANGE_ATTACK1 );
 						m_flNextAttack = gpGlobals->curtime + m_flShotDelay;
@@ -5719,36 +5707,6 @@ bool CNPC_MetroPolice::CanBecomeElite( void )
 	return false;
 }
 //-----------------------------------------------------------------------------
-// Purpose: Gives players the ablility to juke bullets for a small amount of time.
-//			Degrades dynamically based on the current weapon held.
-//-----------------------------------------------------------------------------
-void CNPC_MetroPolice::UpdateLeadScale( CBaseCombatWeapon *pWeapon )
-{
-	if ( HasCondition( COND_SEE_ENEMY ) )
-	{
-		if( FClassnameIs( pWeapon, "weapon_smg1" ) )
-		{
-			// Stops leading in 5 shots.
-			m_flLeadScale += 20;
-		}
-		if( FClassnameIs( pWeapon, "weapon_shotgun" ) )
-		{
-			// Stops leading in 1 shot.
-			m_flLeadScale += 100;
-		}
-		if( FClassnameIs( pWeapon, "weapon_pistol" ) )
-		{
-			// Stops leading in 4 shots.
-			m_flLeadScale += 25;
-		}
-	}
-	m_flLeadScale = MAX( 0, m_flLeadScale );
-	m_flLeadScale = MIN( 100, m_flLeadScale );
-	
-	//DevMsg("Current lead scale is: %f\n", m_flLeadScale );
-	
-}
-//-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
 bool CNPC_MetroPolice::CanSupressEnemy( void )
@@ -5793,6 +5751,45 @@ bool CNPC_MetroPolice::CanSupressEnemy( void )
 	return false;
 }
 //-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CNPC_MetroPolice::HandleRandomSpawnEquipment( void )
+{
+	if ( m_bIsElite )
+	{
+		switch ( random->RandomInt( 0, 3 ) )
+		{
+		case 0:
+			m_spawnEquipment = MAKE_STRING( "weapon_smg1" );
+			break;
+		case 1:
+			m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
+			break;
+		case 2:
+			m_spawnEquipment = MAKE_STRING( "weapon_357" );
+			break;
+		case 3:
+			m_spawnEquipment = MAKE_STRING( "weapon_shotgun" );
+			break;
+		}
+	}
+	else
+	{
+		switch ( random->RandomInt( 0, 2 ) )
+		{
+		case 0:
+			m_spawnEquipment = MAKE_STRING( "weapon_smg1" );
+			break;
+			
+		// Higher chance for pistol cops.
+		case 1:
+		case 2:
+			m_spawnEquipment = MAKE_STRING( "weapon_pistol" );
+			break;
+		}
+	}
+}
+//-----------------------------------------------------------------------------
 // Purpose: Return the actual position the NPC wants to fire at when it's trying
 //			to hit it's current enemy.
 //-----------------------------------------------------------------------------
@@ -5810,9 +5807,7 @@ Vector CNPC_MetroPolice::GetActualShootPosition( const Vector &shootOrigin )
 		vecTargetPosition = GetEnemy()->HeadTarget( shootOrigin );
 	}
 	
-	// lead for some fraction of a second.
-	float scale = 0.25 - ( 0.25 * m_flLeadScale / 100 );
-	return vecTargetPosition + ( GetEnemy()->GetSmoothedVelocity() * -scale );
+	return vecTargetPosition;
 }
 //-----------------------------------------------------------------------------
 //

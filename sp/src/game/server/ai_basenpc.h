@@ -1691,6 +1691,7 @@ public:
 	virtual float		InnateRange1MinRange( void ) { return 0.0f; }
 	virtual float		InnateRange1MaxRange( void ) { return FLT_MAX; }
 
+	virtual bool		OverrideAimOnMoveAndShoot( void ) { return false; }
 	virtual bool		OnBeginMoveAndShoot( void )	{ return true; }
 	virtual void		OnEndMoveAndShoot( void )	{}
 

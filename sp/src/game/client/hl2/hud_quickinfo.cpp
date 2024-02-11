@@ -32,7 +32,10 @@ int ScreenTransform( const Vector& point, Vector& screen );
 #define	HEALTH_WARNING_THRESHOLD	25
 #define	CLIP_PERC_THRESHOLD		0.75f	
 
-static ConVar	hud_quickinfo( "hud_quickinfo", "1", FCVAR_ARCHIVE );
+// Now defined in hl2_gamerules.
+//static ConVar	hud_quickinfo( "hud_quickinfo", "1", FCVAR_ARCHIVE );
+
+extern ConVar hud_quickinfo;
 
 extern ConVar crosshair;
 

@@ -198,6 +198,7 @@ public:
 	bool FindNearestPhysicsObject( int iMaxMass );
 	float DistToPhysicsEnt( void );
 	virtual bool CanSwatPhysicsObjects( void ) { return true; }
+	virtual bool CanExplodeOnDeath( void ) { return true; }
 
 	// Returns whether we must be very near our enemy to attack them.
 	virtual bool MustCloseToAttack(void) { return true; }

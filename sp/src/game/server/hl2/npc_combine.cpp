@@ -34,7 +34,7 @@
 #include "tier0/memdbgon.h"
 
 int g_fCombineQuestion;				// true if an idle grunt asked a question. Cleared when someone answers. YUCK old global from grunt code
-extern ConVar enemies_altfire;
+extern ConVar hl2r_enemies_altfire;
 
 #define COMBINE_SKIN_DEFAULT		0
 #define COMBINE_SKIN_SHOTGUNNER		1
@@ -162,8 +162,7 @@ DEFINE_FIELD( m_flShotDelay, FIELD_FLOAT ),
 DEFINE_FIELD( m_flStopMoveShootTime, FIELD_TIME ),
 DEFINE_FIELD( m_flTimeSawEnemyAgain, FIELD_TIME ),
 DEFINE_FIELD( m_flThrowSpeed, FIELD_TIME ),
-DEFINE_FIELD( m_flLeadScale, FIELD_FLOAT ),
-DEFINE_FIELD( m_flLeadScaleUpdateTime, FIELD_TIME ),
+DEFINE_FIELD( m_flDelayAttacksTime, FIELD_TIME ),
 DEFINE_KEYFIELD( m_iNumGrenades, FIELD_INTEGER, "NumGrenades" ),
 DEFINE_EMBEDDED( m_Sentences ),
 
@@ -333,7 +332,6 @@ void CNPC_Combine::Spawn( void )
 	m_flNextGrenadeCheck	= gpGlobals->curtime + 1;
 	m_flNextPainSoundTime	= 0;
 	m_flNextAlertSoundTime	= 0;
-	m_flLeadScale			= 0;
 	m_bShouldPatrol			= false;
 	m_bCanRun				= true;
 
@@ -372,14 +370,20 @@ void CNPC_Combine::Spawn( void )
 	m_flAlertPatrolTime			= 0;
 
 	m_flNextAltFireTime = gpGlobals->curtime;
+	m_flDelayAttacksTime = -1.0;
 	
-	SetGroundSpeedMultiplier( 1.2 );
+	if ( IsElite() )
+	{
+		SetGroundSpeedMultiplier( 1.2 );
+	}
+	else
+	{
+		SetGroundSpeedMultiplier( 1.5 );
+	}
 	GetEnemies()->SetFreeKnowledgeDuration( 0.0 );
 	
-	if( !IsElite() )
-	{
+	if ( !IsElite() )
 		m_iNumGrenades = 1;
-	}
 
 	NPCInit();
 }
@@ -508,29 +512,33 @@ void CNPC_Combine::PrescheduleThink()
 	extern ConVar ai_debug_shoot_positions;
 	if ( ai_debug_shoot_positions.GetBool() )
 		NDebugOverlay::Cross3D( EyePosition(), 16, 0, 255, 0, false, 0.1 );
-
-	if( gpGlobals->curtime >= m_flStopMoveShootTime )
+	
+	// Elites don't do this!
+	if ( !IsElite() )
 	{
-		// Time to stop move and shoot and start facing the way I'm running.
-		// This makes the combine look attentive when disengaging, but prevents
-		// them from always running around facing you.
-		//
-		// Only do this if it won't be immediately shut off again.
-		if( GetNavigator()->GetPathTimeToGoal() > 1.0f && !ShouldMoveAndShoot() )
+		if( gpGlobals->curtime >= m_flStopMoveShootTime )
 		{
-			m_MoveAndShootOverlay.SuspendMoveAndShoot( 5.0f );
-		//	m_flStopMoveShootTime = FLT_MAX;
-		}
-	}
-
-	if( m_flGroundSpeed > 0 && GetState() == NPC_STATE_COMBAT )
-	{
-		if ( m_MoveAndShootOverlay.IsSuspended() )
-		{
-			// Return to move and shoot when near my goal so that I 'tuck into' the location facing my enemy.
-			if( GetNavigator()->GetPathTimeToGoal() <= 1.0f )
+			// Time to stop move and shoot and start facing the way I'm running.
+			// This makes the combine look attentive when disengaging, but prevents
+			// them from always running around facing you.
+			//
+			// Only do this if it won't be immediately shut off again.
+			if( GetNavigator()->GetPathTimeToGoal() > 1.0f && !ShouldMoveAndShoot() )
 			{
-				m_MoveAndShootOverlay.SuspendMoveAndShoot( 0 );
+				m_MoveAndShootOverlay.SuspendMoveAndShoot( 5.0f );
+			//	m_flStopMoveShootTime = FLT_MAX;
+			}
+		}
+
+		if( m_flGroundSpeed > 0 && GetState() == NPC_STATE_COMBAT )
+		{
+			if ( m_MoveAndShootOverlay.IsSuspended() )
+			{
+				// Return to move and shoot when near my goal so that I 'tuck into' the location facing my enemy.
+				if( GetNavigator()->GetPathTimeToGoal() <= 1.0f )
+				{
+					m_MoveAndShootOverlay.SuspendMoveAndShoot( 0 );
+				}
 			}
 		}
 	}
@@ -539,19 +547,6 @@ void CNPC_Combine::PrescheduleThink()
 	{
 		m_nRecentDamage = 0;
 		m_flRecentDamageTime = 0;
-	}
-	
-	// Increase the current lead scale for every second our enemy isn't in view.
-	if ( m_flLeadScaleUpdateTime <= gpGlobals->curtime && GetEnemy() && HasCondition(COND_ENEMY_OCCLUDED) )
-	{
-		m_flLeadScale -= 12;
-		
-		m_flLeadScale = MAX( 0, m_flLeadScale );
-		m_flLeadScale = MIN( 100, m_flLeadScale );
-		
-	//	DevMsg("Current lead scale is: %f\n", m_flLeadScale );
-		
-		m_flLeadScaleUpdateTime	= gpGlobals->curtime + 1;
 	}
 }
 
@@ -644,13 +639,7 @@ bool CNPC_Combine::ShouldMoveAndShoot()
 
 	//if ( m_bEnemyGrenade )
 	//{
-		if( IsCurSchedule( SCHED_TAKE_COVER_FROM_BEST_SOUND, false ) )
-			return false;
-
-		if( IsCurSchedule( SCHED_COMBINE_TAKE_COVER_FROM_BEST_SOUND, false ) )
-			return false;
-
-		if( IsCurSchedule( SCHED_COMBINE_RUN_AWAY_FROM_BEST_SOUND, false ) )
+		if ( !IsElite() && IsRunningFleeSchedule() )
 			return false;
 	//}
 	
@@ -842,7 +831,7 @@ void CNPC_Combine::RunTaskChaseEnemyContinuously( const Task_t *pTask )
 void CNPC_Combine::StartTask( const Task_t *pTask )
 {
 	// NOTE: This reset is required because we change it in TASK_COMBINE_CHASE_ENEMY_CONTINUOUSLY
-	m_MoveAndShootOverlay.SetInitialDelay( 0.75 );
+	m_MoveAndShootOverlay.SetInitialDelay( random->RandomFloat( 0.25f, 0.75f ) );
 
 	switch ( pTask->iTask )
 	{
@@ -1304,12 +1293,6 @@ void CNPC_Combine::RunTask( const Task_t *pTask )
 						OnRangeAttack1();
 						ResetIdealActivity( ACT_RANGE_ATTACK1 );
 						m_flNextAttack = gpGlobals->curtime + m_flShotDelay;
-						
-						if ( GetEnemy()->IsPlayer() )
-						{
-							// Update target leading!
-							UpdateLeadScale( GetActiveWeapon() );
-						}
 					}
 				}
 			}
@@ -1484,6 +1467,11 @@ void CNPC_Combine::BuildScheduleTestBits( void )
 	{
 		SetCustomInterruptCondition( COND_CAN_RANGE_ATTACK1 );
 	}
+	
+/* 	if ( IsElite() )
+	{
+		ClearCustomInterruptCondition( COND_HEAVY_DAMAGE );
+	} */
 }
 //-----------------------------------------------------------------------------
 // Purpose: Translate base class activities into combot activites
@@ -1533,16 +1521,21 @@ Activity CNPC_Combine::NPC_TranslateActivity( Activity eNewActivity )
 		}
 	}
 	
+	if ( !IsElite() && IsRunningFleeSchedule() )
+	{
+		if ( eNewActivity == ACT_RUN )
+			eNewActivity = ACT_RUN_PROTECTED;		
+	}
+		
+	
 	if ( IsElite() && GetEnemy() != NULL )
 	{
 		switch ( eNewActivity )
 		{
 		case ACT_RUN:
-			eNewActivity = ACT_WALK;
-			break;
-
 		case ACT_RUN_AIM:
-			eNewActivity = ACT_WALK_AIM;
+			if ( GetEnemy() != NULL )
+				eNewActivity = ACT_WALK_AIM;
 			break;
 		
 		case ACT_MELEE_ATTACK1:
@@ -1742,7 +1735,7 @@ int CNPC_Combine::SelectCombatSchedule()
 	// ----------------------
 	// LIGHT DAMAGE
 	// ----------------------
-	if ( ( m_nRecentDamage / GetMaxHealth() ) > ( RECENT_DAMAGE_THRESHOLD / 100 ) )
+	if ( ( m_nRecentDamage / GetMaxHealth() ) > ( RECENT_DAMAGE_THRESHOLD / 100 ) && !IsElite() )
 	{
 		if ( GetEnemy() != NULL && !HasCondition( COND_COMBINE_ON_FIRE ) )
 		{
@@ -1796,10 +1789,12 @@ int CNPC_Combine::SelectCombatSchedule()
 		{
 			if ( CanGrenadeEnemy( false ) && OccupyStrategySlot( SQUAD_SLOT_GRENADE1 ) )
 			{
+				DelaySquadAdvances( 3 );
+				
 				// Start with trying to see if a grenade can be thrown!
 				return SCHED_RANGE_ATTACK2;
 			}
-  			if ( !IsStrategySlotRangeOccupied( SQUAD_SLOT_GRENADE1, SQUAD_SLOT_GRENADE1 ) && CanOccupyAttackSlot() )
+  			if ( m_flDelayAttacksTime < gpGlobals->curtime && CanOccupyAttackSlot() )
 			{
 				// Try to charge in and break the enemy's cover!
 				return SCHED_ESTABLISH_LINE_OF_FIRE;
@@ -2221,41 +2216,25 @@ int CNPC_Combine::TranslateSchedule( int scheduleType )
 	case SCHED_TAKE_COVER_FROM_ENEMY:
 		{
 			int	m_nDamage = m_nRecentDamage;
+			bool bTakenDamage = ( m_nDamage / GetMaxHealth() ) > ( RECENT_DAMAGE_THRESHOLD / 100 );
 			
 			m_nRecentDamage = 0;
 			m_flRecentDamageTime = 0;
 			
-			if ( m_pSquad )
+			// Have to explicitly check innate range attack condition as may have weapon with range attack 2
+			if ( HasCondition(COND_CAN_RANGE_ATTACK2) && OccupyStrategySlot( SQUAD_SLOT_GRENADE1 ) && bTakenDamage )
 			{
-				// Have to explicitly check innate range attack condition as may have weapon with range attack 2
-				if ( HasCondition(COND_CAN_RANGE_ATTACK2) && OccupyStrategySlot( SQUAD_SLOT_GRENADE1 ) &&
-					( m_nDamage / GetMaxHealth() ) > ( RECENT_DAMAGE_THRESHOLD / 100 ) )
-				{
+				if ( m_pSquad )
 					m_Sentences.Speak( "COMBINE_THROW_GRENADE" );
-					return SCHED_COMBINE_TOSS_GRENADE_COVER1;
-				}
-				else
-				{
-//					if ( ShouldChargePlayer() && !IsUnreachable( GetEnemy() ) )
-//						return SCHED_COMBINE_CHARGE_PLAYER;
-
-					return SCHED_COMBINE_TAKE_COVER1;
-				}
+				
+				return SCHED_COMBINE_TOSS_GRENADE_COVER1;
 			}
 			else
 			{
-				// Have to explicitly check innate range attack condition as may have weapon with range attack 2
-				if ( /* random->RandomInt(0,1) && */ HasCondition(COND_CAN_RANGE_ATTACK2) )
-				{
-					return SCHED_COMBINE_GRENADE_COVER1;
-				}
-				else
-				{
-//					if ( ShouldChargePlayer() && !IsUnreachable( GetEnemy() ) )
-//						return SCHED_COMBINE_CHARGE_PLAYER;
+				if ( ShouldChargePlayer() && !IsUnreachable( GetEnemy() ) )
+					return SCHED_COMBINE_CHARGE_PLAYER;
 
-					return SCHED_COMBINE_TAKE_COVER1;
-				}
+				return SCHED_COMBINE_TAKE_COVER1;
 			}
 		}
 	case SCHED_TAKE_COVER_FROM_BEST_SOUND:
@@ -2508,7 +2487,7 @@ void CNPC_Combine::HandleAnimEvent( animevent_t *pEvent )
 		}
 		else if ( pEvent->event == COMBINE_AE_ALTFIRE )
 		{
-			if( IsElite() || enemies_altfire.GetBool() )
+			if( IsElite() || hl2r_enemies_altfire.GetBool() )
 			{
 				animevent_t fakeEvent;
 
@@ -2990,7 +2969,7 @@ bool CNPC_Combine::CanThrowGrenade( const Vector &vecTarget )
 	// ---------------------------------------------------------------------
 	if ( m_pSquad )
 	{
-		if (m_pSquad->SquadMemberInRange( vecTarget, COMBINE_MIN_GRENADE_CLEAR_DIST ))
+		if (m_pSquad->SquadMemberPathInRange( vecTarget, COMBINE_MIN_GRENADE_CLEAR_DIST ))
 		{
 			// crap, I might blow my own guy up. Don't throw a grenade and don't check again for a while.
 			m_flNextGrenadeCheck = gpGlobals->curtime + 1; // one full second.
@@ -3066,7 +3045,7 @@ bool CNPC_Combine::CheckCanThrowGrenade( const Vector &vecTarget )
 //-----------------------------------------------------------------------------
 bool CNPC_Combine::CanAltFireEnemy( bool bUseFreeKnowledge )
 {
-	if (!IsElite() && !enemies_altfire.GetBool() )
+	if (!IsElite() && !hl2r_enemies_altfire.GetBool() )
 		return false;
 
 //	if (IsCrouching())
@@ -3593,7 +3572,25 @@ bool CNPC_Combine::IsRunningApproachEnemySchedule()
 
 	return false;
 }
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool CNPC_Combine::IsRunningFleeSchedule()
+{
+	if( IsCurSchedule( SCHED_RUN_FROM_ENEMY, false ) )
+		return true;
+	
+	if( IsCurSchedule( SCHED_COMBINE_TAKE_COVER_FROM_BEST_SOUND, false ) )
+		return true;
+	
+	if ( IsCurSchedule( SCHED_COMBINE_RUN_AWAY_FROM_BEST_SOUND, false ) )
+		return true;
 
+	return false;
+}
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
 bool CNPC_Combine::ShouldPickADeathPose( void ) 
 { 
 	return !IsCrouching(); 
@@ -3656,6 +3653,17 @@ int CNPC_Combine::OnTakeDamage_Alive( const CTakeDamageInfo &inputInfo )
 		m_flRecentDamageTime = gpGlobals->curtime;
 		
 	}
+	
+	//Take extra damage from vehicles.
+	CBaseCombatCharacter *npcEnemy = info.GetAttacker()->MyCombatCharacterPointer();
+	if ( !npcEnemy )
+	{
+		if ( info.GetAttacker()->GetServerVehicle() )
+		{
+			float flDamage = info.GetDamage() * 1.5;
+			info.SetDamage( flDamage );
+		}
+	}
 
 	return BaseClass::OnTakeDamage_Alive( info ); 
 }
@@ -3671,72 +3679,63 @@ Vector CNPC_Combine::GetActualShootPosition( const Vector &shootOrigin )
 		return vecTargetPosition;
 	}
 	
-	/* if ( GetEnemy()->IsPlayer() )
-	{
-		Vector vecEnemyLKP = GetEnemyLKP();
-		Vector vecEnemyOffset = GetEnemy()->BodyTarget( shootOrigin ) - GetEnemy()->GetAbsOrigin();
-		Vector vecTargetPosition = vecEnemyOffset + vecEnemyLKP;
-		
-		// lead for some fraction of a second.
-		float scale = 0.25 - ( 0.25 * m_flLeadScale / 100 );
-		return vecTargetPosition + ( GetEnemy()->GetSmoothedVelocity() * -scale );
-	} */
-	
 	return BaseClass::GetActualShootPosition( shootOrigin );
-}
-//-----------------------------------------------------------------------------
-// Purpose: Gives players the ablility to juke bullets for a small amount of time.
-//			Degrades dynamically based on the current weapon held.
-//-----------------------------------------------------------------------------
-void CNPC_Combine::UpdateLeadScale( CBaseCombatWeapon *pWeapon )
-{
-	if ( HasCondition( COND_SEE_ENEMY ) )
-	{
-		if( FClassnameIs( pWeapon, "weapon_smg1" ) )
-		{
-			// Stops leading in 5 shots.
-			m_flLeadScale += 20;
-		}
-		if( FClassnameIs( pWeapon, "weapon_shotgun" ) )
-		{
-			// Stops leading in 1 shot.
-			m_flLeadScale += 100;
-		}
-		if( FClassnameIs( pWeapon, "weapon_ar2" ) )
-		{
-			// Stops leading in 4 shots.
-			m_flLeadScale += 25;
-		}
-	}
-	m_flLeadScale = MAX( 0, m_flLeadScale );
-	m_flLeadScale = MIN( 100, m_flLeadScale );
-	
-	//DevMsg("Current lead scale is: %f\n", m_flLeadScale );
-	
 }
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
 int CNPC_Combine::RangeAttack1Conditions ( float flDot, float flDist )
 {
-	// Elites don't care about range.
+	CBaseCombatWeapon *pWeapon = GetActiveWeapon();
+	
+ 	if ( pWeapon->UsesPrimaryAmmo() && !pWeapon->HasPrimaryAmmo() )
+ 	{
+ 		return COND_NO_PRIMARY_AMMO;
+ 	}
 	if ( !IsElite() )
 	{
-/* 		if ( flDist < 64)
+		if ( flDist < pWeapon->m_fMinRange1) 
 		{
 			return COND_TOO_CLOSE_TO_ATTACK;
-		} 
-		else*/ if (flDist > 784)
+		}
+		else if (flDist > pWeapon->m_fMaxRange1) 
 		{
 			return COND_TOO_FAR_TO_ATTACK;
 		}
 	}
-	//else if (flDot < 0.5)
-	//{
-	//	return COND_NOT_FACING_ATTACK;
-	//}
 
-	return COND_CAN_RANGE_ATTACK1;
+ 	return COND_CAN_RANGE_ATTACK1;
+}
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+bool CNPC_Combine::OverrideAimOnMoveAndShoot( void )
+{
+	if ( IsElite() )
+		return true;
+	
+	return BaseClass::OverrideAimOnMoveAndShoot();
+}
+//-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+void CNPC_Combine::DelaySquadAdvances( float flTime )
+{
+	m_flDelayAttacksTime = gpGlobals->curtime + flTime;
+	
+	AISquadIter_t iter;
+	CAI_BaseNPC *pSquadmate = m_pSquad ? m_pSquad->GetFirstMember( &iter ) : NULL;
+	while ( pSquadmate )
+	{
+		CNPC_Combine *pCombine = dynamic_cast<CNPC_Combine*>(pSquadmate);
+
+		if( pCombine )
+		{
+			pCombine->m_flDelayAttacksTime = gpGlobals->curtime + flTime;
+		}
+
+		pSquadmate = m_pSquad->GetNextMember( &iter );
+	}
 }
 //-----------------------------------------------------------------------------
 //

@@ -237,6 +237,8 @@ END_RECV_TABLE()
 
 		RecvPropVector		( RECVINFO( m_vecBaseVelocity ) ),
 
+		RecvPropVector		( RECVINFO( m_vecSmoothedVelocity) ),
+		
 		RecvPropEHandle		( RECVINFO( m_hConstraintEntity)),
 		RecvPropVector		( RECVINFO( m_vecConstraintCenter) ),
 		RecvPropFloat		( RECVINFO( m_flConstraintRadius )),
@@ -244,6 +246,7 @@ END_RECV_TABLE()
 		RecvPropFloat		( RECVINFO( m_flConstraintSpeedFactor )),
 
 		RecvPropFloat		( RECVINFO( m_flDeathTime )),
+		RecvPropFloat		( RECVINFO(m_flRollSpeed) ),
 
 		RecvPropInt			( RECVINFO( m_nWaterLevel ) ),
 		RecvPropFloat		( RECVINFO( m_flLaggedMovementValue )),

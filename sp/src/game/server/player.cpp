@@ -115,7 +115,7 @@ ConVar cl_backspeed( "cl_backspeed", "450", FCVAR_REPLICATED | FCVAR_CHEAT );
 
 // This is declared in the engine, too
 ConVar	sv_noclipduringpause( "sv_noclipduringpause", "0", FCVAR_REPLICATED | FCVAR_CHEAT, "If cheats are enabled, then you can noclip with the game paused (for doing screenshots, etc.)." );
-extern ConVar manual_pickup;
+extern ConVar hl2r_manual_pickup;
 extern ConVar sv_maxunlag;
 extern ConVar sv_turbophysics;
 extern ConVar *sv_maxreplay;
@@ -295,6 +295,8 @@ BEGIN_DATADESC( CBasePlayer )
 	DEFINE_FIELD( m_iRespawnFrames, FIELD_FLOAT ),
 	DEFINE_FIELD( m_afPhysicsFlags, FIELD_INTEGER ),
 	DEFINE_FIELD( m_hVehicle, FIELD_EHANDLE ),
+	
+	DEFINE_FIELD( m_flRollSpeed, FIELD_FLOAT ),
 
 	// recreate, don't restore
 	// DEFINE_FIELD( m_CommandContext, CUtlVector < CCommandContext > ),
@@ -6573,7 +6575,7 @@ bool CBasePlayer::BumpWeapon( CBaseCombatWeapon *pWeapon, bool bUsed )
 		return false;
 	
 	CBasePlayer *pPlayer = UTIL_GetLocalPlayer();
-	if ( manual_pickup.GetBool() && ( pPlayer && !pPlayer->IsInAVehicle() ) )
+	if ( hl2r_manual_pickup.GetBool() && ( pPlayer && !pPlayer->IsInAVehicle() ) )
 	{
 		// Static objects cannot be held, restort to +use presses instead.
 		IPhysicsObject *pObject = pWeapon->VPhysicsGetObject();
@@ -7975,6 +7977,10 @@ void SendProxy_CropFlagsToPlayerFlagBitsLength( const SendProp *pProp, const voi
 		SendPropVector		( SENDINFO( m_vecBaseVelocity ), 20, 0, -1000, 1000 ),
 #endif
 
+		SendPropVector		( SENDINFO( m_vecSmoothedVelocity), 0, SPROP_NOSCALE ),
+		
+		SendPropFloat		( SENDINFO( m_flRollSpeed), 0, SPROP_NOSCALE ),
+		
 		SendPropEHandle		( SENDINFO( m_hConstraintEntity)),
 		SendPropVector		( SENDINFO( m_vecConstraintCenter), 0, SPROP_NOSCALE ),
 		SendPropFloat		( SENDINFO( m_flConstraintRadius ), 0, SPROP_NOSCALE ),
